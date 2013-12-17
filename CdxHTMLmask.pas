@@ -8,6 +8,7 @@ Version:    1.1
 Purpose:    Mask special chars to HTML entities and vice versa
 Copyright:  Alexander Feuster
 Contact:    alexander.feuster@gmail.com
+URL:        https://github.com/feuster/CodexLazarus
 Licence:    GPLv2
             http://www.gnu.org/licenses/gpl-2.0
 
@@ -17,6 +18,7 @@ Version History:
 1.0   02.09.2008    Initial version written in D7 (Non-Unicode)
 1.1   14.12.2013    Rework as FPC/Lazarus version (Unicode)
                     Moved entities into a constant array
+1.1b  17.12.2013    added Github URL
 
 ------------------------------------------------------------------------
 Additional Technical Information:

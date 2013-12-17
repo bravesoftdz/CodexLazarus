@@ -8,6 +8,7 @@ Version:    1.0
 Purpose:    Identify Windows version
 Copyright:  Alexander Feuster
 Contact:    alexander.feuster@gmail.com
+URL:        https://github.com/feuster/CodexLazarus
 Licence:    GPLv2
             http://www.gnu.org/licenses/gpl-2.0
 
@@ -15,6 +16,7 @@ Licence:    GPLv2
 Version History:
 ------------------------------------------------------------------------
 1.0   13.12.2013    Initial version
+1.0b  17.12.2013    added Github URL
 
 
 ------------------------------------------------------------------------

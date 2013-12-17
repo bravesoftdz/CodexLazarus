@@ -8,6 +8,7 @@ Version:    1.0
 Purpose:    Set of additional helper functions
 Copyright:  Alexander Feuster
 Contact:    alexander.feuster@gmail.com
+URL:        https://github.com/feuster/CodexLazarus
 Licence:    GPLv2
             http://www.gnu.org/licenses/gpl-2.0
 
@@ -20,6 +21,7 @@ Version History:
                     function UTF8Chr()
                     function Split()
                     function SubnetFromIP()
+1.0b  17.12.2013    added Github URL
 }
 
 {$mode objfpc}{$H+}

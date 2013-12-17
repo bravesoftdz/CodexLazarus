@@ -17,7 +17,9 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Description Value="Codex Lazarus is a set of Units released under the General Public License Version 2"/>
+    <Description Value="Codex Lazarus is a set of Units released under the General Public License Version 2
+
+https://github.com/feuster/CodexLazarus"/>
     <License Value="GPLv2
 http://www.gnu.org/licenses/gpl-2.0
 
@@ -362,7 +364,7 @@ library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.
 
 "/>
-    <Version Major="1"/>
+    <Version Major="1" Build="1"/>
     <Files Count="4">
       <Item1>
         <Filename Value="CdxWindowsVersion.pas"/>

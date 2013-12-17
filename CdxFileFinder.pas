@@ -8,6 +8,7 @@ Version:    1.1
 Purpose:    Find file(s)/folder(s) with optional graphical progress
 Copyright:  Alexander Feuster
 Contact:    alexander.feuster@gmail.com
+URL:        https://github.com/feuster/CodexLazarus
 Licence:    GPLv2
             http://www.gnu.org/licenses/gpl-2.0
 
@@ -18,6 +19,7 @@ Version History:
 1.1   15.12.2013    Rework as FPC/Lazarus version
                     Renamed functions with appendix "Ex" to prevent collisions with other similiar FPC/Lazarus etc. functions
                     Supports now also UTF8 and Symlinks
+1.1b  17.12.2013    added Github URL
 
 }
 
