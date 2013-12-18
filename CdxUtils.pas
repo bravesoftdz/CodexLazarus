@@ -43,9 +43,9 @@ function UnicodeStringReplace(const S, OldPattern, NewPattern: UnicodeString;  F
 function UTF8Chr(Unicode: Cardinal): UTF8String;
 function Split(Delimiter: Char; Text: String): TStrings;
 function SubnetFromIPv4(IP: String): String;
-procedure WindowsLogoff(const forced: Boolean = true; const Delay: Byte = 1);
-procedure WindowsRestart(const forced: Boolean = true; const Delay: Byte = 1);
-procedure WindowsShutdown(const forced: Boolean = true; const Delay: Byte = 1);
+procedure WindowsLogoff;
+procedure WindowsRestart(const forced: Boolean = true; const Delay: Byte = 1; const Comment: String ='');
+procedure WindowsShutdown(const forced: Boolean = true; const Delay: Byte = 1; const Comment: String ='');
 
 
 implementation
@@ -203,31 +203,50 @@ begin
     Result:=AnsiLeftStr(IP,LastDelimiter('.',IP));
 end;
 
-procedure Call_Shutdown_Exe(Mode: Byte; const forced: Boolean = true; const Delay: Byte = 1);
+procedure Call_Shutdown_Exe(Mode: Byte; const forced: Boolean = true; const Delay: Byte = 1; const Comment: String ='');
 //Function calls of Windows commandline tool "shutdown.exe"
 var
   Process: TProcess;
   Para: String;
-
+  CommentStr: String;
 begin
+  //Use given comment or create a default comment (only for restart/shutdown!)
+  if Comment<>'' then
+    CommentStr:=Comment
+  else
+    begin
+      if Mode=2 then
+        CommentStr:='Windows Reboot'
+      else
+        CommentStr:='Windows Shutdown';
+      if Delay=0 then
+        CommentStr:=CommentStr+' now'
+      else
+        begin
+          if Delay=1 then
+            CommentStr:=CommentStr+' in 1 second!'
+          else
+            CommentStr:=CommentStr+' in '+IntToStr(Delay)+ ' seconds!';
+        end;
+    end;
+
   //Create a process for Windows "shutdown.exe"
   Process:=TProcess.Create(nil);
-  Process.Executable:='shutdown.exe';
-  Para:=' ';
+  Process.Executable:='cmd.exe';        //Windows commandline shell
+  Para:='/C shutdown.exe ';             //Windows shutdown.exe commandline tool
   if Mode=1 then
-    Para:=Para+'-l'                      //logoff with a timed delay of 1 sec
+    Para:=Para+'-l'                     //logoff
   else if Mode=2 then
-    Para:=Para+'-r'                      //restart with a timed delay of 1 sec
+    Para:=Para+'-r -c "'+CommentStr+'"' //restart
   else
-    Para:=Para+'-s';                     //shutdown with a timed delay of 1 sec
-  if forced=true then
-    Para:=Para+' -f';                     //forced
-  if Delay>99 then
-    Para:=Para+' -t 99'                   //add delay restricted to maximum of 99
-  else if Delay<10 then
-    Para:=Para+' -t 0'+IntToStr(Delay)    //add delay below 10 seconds with trailing 0
+    Para:=Para+'-s -c "'+CommentStr+'"';//shutdown
+  if (Delay>0) and (Mode<>1) then
+    Para:=Para+' -t '+IntToStr(Delay)   //add optional delay for restart/shutdown
   else
-    Para:=Para+' -t '+IntToStr(Delay);    //add delay
+    begin
+      if forced=true then
+        Para:=Para+' -f';               //forced in case of 0 second delay otherwise shutdown.exe uses this option automatically
+    end;
   Process.Parameters.Text:=Para;
   Process.Options:=Process.Options+[];
   Process.ShowWindow:=swoShow;
@@ -241,22 +260,22 @@ begin
   Application.Terminate;
 end;
 
-procedure WindowsLogoff(const forced: Boolean = true; const Delay: Byte = 1);
+procedure WindowsLogoff;
 //Restart Windows
 begin
-  Call_Shutdown_Exe(1, forced, Delay);
+  Call_Shutdown_Exe(1); //forced, Delay and Comment not used for Logoff
 end;
 
-procedure WindowsRestart(const forced: Boolean = true; const Delay: Byte = 1);
+procedure WindowsRestart(const forced: Boolean = true; const Delay: Byte = 1; const Comment: String ='');
 //Restart Windows
 begin
-  Call_Shutdown_Exe(2, forced, Delay);
+  Call_Shutdown_Exe(2, forced, Delay, Comment);
 end;
 
-procedure WindowsShutdown(const forced: Boolean = true; const Delay: Byte = 1);
+procedure WindowsShutdown(const forced: Boolean = true; const Delay: Byte = 1; const Comment: String ='');
 //Shutdown Windows
 begin
-  Call_Shutdown_Exe(0, forced, Delay);
+  Call_Shutdown_Exe(0, forced, Delay, Comment);
 end;
 
 end.
