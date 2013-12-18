@@ -1,3 +1,9 @@
 Codex Lazarus is a set of Lazarus/FPC Units released under the General Public License Version 2
 
 http://www.gnu.org/licenses/gpl-2.0
+
+CdxFileFinder:    	Find file(s)/folder(s) with optional graphical progress
+CdxHTMLMask:		Mask special chars to HTML entities and vice versa
+CdxNibble:		Provides functions and types for a Nibble (4 Bit data type)
+CdxUtils:		Set of additional helper functions
+CdxWindowsVersion:	Identify Windows version
