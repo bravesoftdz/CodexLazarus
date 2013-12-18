@@ -4,7 +4,8 @@ http://www.gnu.org/licenses/gpl-2.0
 
 CdxFileFinder:    	Find file(s)/folder(s) with optional graphical progress
 CdxHTMLMask:		Mask special chars to HTML entities and vice versa
-CdxMediaInfo:		Header for dynamic loading of functions from the MediaInfo DLL (not in Codex Lazarus package V1.1 included)
+CdxMediaInfo:		Header for dynamic loading of functions from the MediaInfo DLL
+			(not in Codex Lazarus package V1.1 included)
 CdxNibble:		Provides functions and types for a Nibble (4 Bit data type)
 CdxUtils:		Set of additional helper functions
 CdxWindowsVersion:	Identify Windows version
