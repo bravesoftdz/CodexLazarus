@@ -27,6 +27,8 @@ Version History:
                     procedure WindowsLogoff()
                     procedure WindowsRestart()
                     procedure WindowsShutdown()
+                    procedure ApplicationRestart()
+                    function ApplicationVersion()
 
 }
 {$mode objfpc}{$H+}
@@ -34,8 +36,10 @@ Version History:
 interface
 
 uses
-  Classes, SysUtils, StrUtils, Windows, Forms, Process;
+  Classes, SysUtils, StrUtils, Windows, Process;
 
+procedure ApplicationRestart;
+function ApplicationVersion(const ShortForm: Boolean = false): String;
 function GetFileVersion(Filename: String; const ShortForm: Boolean = false): String;
 function HexToBinStr(HexString: String): String;
 function IntToBinStr(Value: Integer): String;
@@ -49,6 +53,28 @@ procedure WindowsShutdown(const forced: Boolean = true; const Delay: Byte = 1; c
 
 
 implementation
+
+procedure ApplicationRestart;
+//Restart the application
+var
+  Process: TProcess;
+
+begin
+  Process:=TProcess.Create(nil);
+  Process.CommandLine:=GetCommandLine;
+  Process.Options:=Process.Options+[];
+  Process.ShowWindow:=swoShow;
+  Process.Priority:=ppNormal;
+  Process.Execute;
+  Process.Free;
+  TerminateProcess(GetCurrentProcess, 1);
+end;
+
+function ApplicationVersion(const ShortForm: Boolean = false): String;
+//Retrieve the file version of the actual application
+begin
+  result:=GetFileVersion(StringReplace(ExtractFilePath(GetCommandLine)+ExtractFilename(GetCommandLine),'"','',[rfReplaceAll, rfIgnoreCase]),ShortForm);
+end;
 
 function GetFileVersion(Filename: String; const ShortForm: Boolean = false): String;
 //Retrieve the file version from an EXE file
@@ -207,8 +233,9 @@ procedure Call_Shutdown_Exe(Mode: Byte; const forced: Boolean = true; const Dela
 //Function calls of Windows commandline tool "shutdown.exe"
 var
   Process: TProcess;
-  Para: String;
+  Parameter: String;
   CommentStr: String;
+
 begin
   //Use given comment or create a default comment (only for restart/shutdown!)
   if Comment<>'' then
@@ -232,22 +259,22 @@ begin
 
   //Create a process for Windows "shutdown.exe"
   Process:=TProcess.Create(nil);
-  Process.Executable:='cmd.exe';        //Windows commandline shell
-  Para:='/C shutdown.exe ';             //Windows shutdown.exe commandline tool
+  Process.Executable:='cmd.exe';                  //Windows commandline shell
+  Parameter:='/C shutdown.exe ';                  //Windows shutdown.exe commandline tool
   if Mode=1 then
-    Para:=Para+'-l'                     //logoff
+    Parameter:=Parameter+'-l'                     //logoff
   else if Mode=2 then
-    Para:=Para+'-r -c "'+CommentStr+'"' //restart
+    Parameter:=Parameter+'-r -c "'+CommentStr+'"' //restart
   else
-    Para:=Para+'-s -c "'+CommentStr+'"';//shutdown
+    Parameter:=Parameter+'-s -c "'+CommentStr+'"';//shutdown
   if (Delay>0) and (Mode<>1) then
-    Para:=Para+' -t '+IntToStr(Delay)   //add optional delay for restart/shutdown
+    Parameter:=Parameter+' -t '+IntToStr(Delay)   //add optional delay for restart/shutdown
   else
     begin
       if forced=true then
-        Para:=Para+' -f';               //forced in case of 0 second delay otherwise shutdown.exe uses this option automatically
+        Parameter:=Parameter+' -f';               //forced in case of 0 second delay otherwise shutdown.exe uses this option automatically
     end;
-  Process.Parameters.Text:=Para;
+  Process.Parameters.Text:=Parameter;
   Process.Options:=Process.Options+[];
   Process.ShowWindow:=swoShow;
   Process.Priority:=ppNormal;
@@ -257,7 +284,7 @@ begin
   Process.Free;
 
   //close application to prevent Windows not shutting down due to a still running task
-  Application.Terminate;
+  TerminateProcess(GetCurrentProcess, 1);
 end;
 
 procedure WindowsLogoff;
