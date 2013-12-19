@@ -22,6 +22,7 @@ Version History:
                     procedure ApplicationRestart() moved from CdxUtils unit
                     function ApplicationVersion() moved from CdxUtils unit
                     function ComPortExists() moved from CdxUtils unit
+                    function EnumerateComPorts()
 
 }
 {$mode objfpc}{$H+}
@@ -34,6 +35,7 @@ uses
 procedure ApplicationRestart;
 function ApplicationVersion(const ShortForm: Boolean = false): String;
 function ComPortExists(COM: Integer): Boolean;
+function EnumerateComPorts: TStrings;
 procedure WindowsLogoff;
 procedure WindowsRestart(const forced: Boolean = true; const Delay: Byte = 1; const Comment: String ='');
 procedure WindowsShutdown(const forced: Boolean = true; const Delay: Byte = 1; const Comment: String ='');
@@ -85,6 +87,21 @@ begin
   finally
     CloseHandle(DeviceHandle);
   end;
+end;
+
+function EnumerateComPorts: TStrings;
+//Enumerate available COM ports winthin range from COM0 to COM25
+var
+  Port: Byte;
+
+begin
+  result:=TStringList.Create;
+  result.Clear;
+  for Port:=0 to 25 do
+    begin
+      if ComPortExists(Port)=true then
+        result.Add('COM'+IntToStr(Port));
+    end;
 end;
 
 procedure Call_Shutdown_Exe(Mode: Byte; const forced: Boolean = true; const Delay: Byte = 1; const Comment: String ='');
