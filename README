@@ -8,4 +8,6 @@ CdxMediaInfo:		Header for dynamic loading of functions from the MediaInfo DLL
 			(not in Codex Lazarus package V1.1 included)
 CdxNibble:		Provides functions and types for a Nibble (4 Bit data type)
 CdxUtils:		Set of additional helper functions
+CdxWinamp:		Remote access to Winamp for playback of files and URLs
 CdxWindowsVersion:	Identify Windows version
+
