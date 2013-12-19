@@ -7,8 +7,9 @@ unit CodexLazarus;
 interface
 
 uses
-  CdxWindowsVersion, CdxFileFinder, CdxHTMLmask, CdxUtils, CdxNibble, 
-  CdxWinamp, CdxID3v1, CdxMultimedia, LazarusPackageIntf;
+  CdxWindowsVersion, CdxFileFinder, CdxHTMLmask, CdxNibble, CdxWinamp, 
+  CdxID3v1, CdxMultimedia, CdxFileUtils, CdxStrUtils, CdxSysUtils, 
+  LazarusPackageIntf;
 
 implementation
 

@@ -364,8 +364,8 @@ library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.
 
 "/>
-    <Version Major="1" Minor="1" Build="3"/>
-    <Files Count="8">
+    <Version Major="1" Minor="2"/>
+    <Files Count="10">
       <Item1>
         <Filename Value="CdxWindowsVersion.pas"/>
         <UnitName Value="CdxWindowsVersion"/>
@@ -379,25 +379,33 @@ Public License instead of this License.
         <UnitName Value="CdxHTMLmask"/>
       </Item3>
       <Item4>
-        <Filename Value="CdxUtils.pas"/>
-        <UnitName Value="CdxUtils"/>
-      </Item4>
-      <Item5>
         <Filename Value="CdxNibble.pas"/>
         <UnitName Value="CdxNibble"/>
-      </Item5>
-      <Item6>
+      </Item4>
+      <Item5>
         <Filename Value="CdxWinamp.pas"/>
         <UnitName Value="CdxWinamp"/>
-      </Item6>
-      <Item7>
+      </Item5>
+      <Item6>
         <Filename Value="CdxID3v1.pas"/>
         <UnitName Value="CdxID3v1"/>
-      </Item7>
-      <Item8>
+      </Item6>
+      <Item7>
         <Filename Value="CdxMultimedia.pas"/>
         <UnitName Value="CdxMultimedia"/>
+      </Item7>
+      <Item8>
+        <Filename Value="CdxFileUtils.pas"/>
+        <UnitName Value="CdxFileUtils"/>
       </Item8>
+      <Item9>
+        <Filename Value="CdxStrUtils.pas"/>
+        <UnitName Value="CdxStrUtils"/>
+      </Item9>
+      <Item10>
+        <Filename Value="CdxSysUtils.pas"/>
+        <UnitName Value="CdxSysUtils"/>
+      </Item10>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="3">
