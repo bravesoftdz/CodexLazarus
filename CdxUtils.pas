@@ -102,7 +102,9 @@ begin
   DeviceHandle:=0;
   result:=false;
   try
+    //create COM port handle
     DeviceHandle:=CreateFile(PChar('COM'+IntToStr(COM)), GENERIC_READ or GENERIC_WRITE, 0, nil, OPEN_EXISTING, 0, 0);
+    //if handle can be created COM port does exist (attention: an existing but already opened COM port will also not be available!)
     if DeviceHandle<>INVALID_HANDLE_VALUE then
       result:=true;
   finally
@@ -120,14 +122,19 @@ var
   lpMaximumComponentLength: DWORD;
 
 begin
+  //default return value
   result:='';
   try
+    //reserve memory for variables
     GetMem(lpVolumeNameBuffer, MAX_PATH);
     GetMem(lpVolumeSerialNumber, MAX_PATH);
     GetMem(lpFileSystemNameBuffer, MAX_PATH);
+    //read volume information
     GetVolumeInformation(PChar(DriveLetter+':\'), lpVolumeNameBuffer, MAX_PATH, lpVolumeSerialNumber, lpMaximumComponentLength, lpFileSystemFlags, lpFileSystemNameBuffer, MAX_PATH);
+    //return filesystem name
     result:=StrPas(lpFileSystemNameBuffer);
   finally
+    //free up reserved memory
     FreeMem(lpVolumeNameBuffer, MAX_PATH);
     FreeMem(lpVolumeSerialNumber, MAX_PATH);
     FreeMem(lpFileSystemNameBuffer, MAX_PATH);
@@ -142,12 +149,10 @@ var
 begin
   //default return value
   result:=0;
-
   //check if file does exist
   if FileExists(FileName)=false then
     exit;
-
-  //create afilestream and read its size
+  //create a filestream and read its size
   try
     FileStream:=TFileStream.Create(FileName,fmOpenRead OR fmShareDenyWrite);
     result:=FileStream.Size;
@@ -167,6 +172,7 @@ var
   nInfoSize: DWORD;
 
 begin
+  //create default results
   if ShortForm=true then
     result:='0.0'
   else
@@ -181,6 +187,7 @@ begin
   if Assigned(pFileInfo) then
     begin
       try
+        //read file version info from binary
         if GetFileVersionInfo(aFilename, pdwHandle, nInfoSize, pFileInfo) then
           begin
             pFixFInfo:=nil;
@@ -188,8 +195,10 @@ begin
             if VerQueryValue(pFileInfo, '\', Pointer(pFixFInfo), nFixFInfo) then
               begin
                 if ShortForm=false then
+                  //Create a full version string with MAIN.SUBVERSION.REVISION.BUILD
                   result:=Format('%d.%d.%d.%d',[HiWord(pFixFInfo^.dwFileVersionMS),LoWord(pFixFInfo^.dwFileVersionMS),HiWord(pFixFInfo^.dwFileVersionLS),LoWord(pFixFInfo^.dwFileVersionLS)])
                 else
+                  //Create a short form of the version string with MAIN.BUILD
                   result:=Format('%d.%d',[HiWord(pFixFInfo^.dwFileVersionMS),LoWord(pFixFInfo^.dwFileVersionLS)]);
               end;
           end;
@@ -202,7 +211,7 @@ end;
 function HexToBinStr(HexString: String): String;
 //Converts a hexadecimal String to a binary String
 const
-  //String array for the value Bits from 0 to 15
+  //String array for the binary value Bits from 0 to 15
   HexBits: array [0..15] of String =
     ('0000', '0001', '0010', '0011',
      '0100', '0101', '0110', '0111',
@@ -298,8 +307,10 @@ var
   UTF8Char: UTF8String;
 
 begin
+  //make sure Unicode does not exceed 2 bytes
   if Unicode>$FFFF then
     Unicode:=$FFFF;
+  //do conversion
   UTF8Char:=WideChar(Unicode);
   result:=Utf8Encode(UTF8Char);
 end;
@@ -324,6 +335,7 @@ begin
     Seconds:=Seconds-(Minutes*60);
     result:= FormatFloat('00', Hours)+':'+FormatFloat('00', Minutes)+':'+FormatFloat('00', Seconds);
   except
+    //default fallback result
     result:='00:00:00';
   end;
 end;
