@@ -8,7 +8,7 @@ interface
 
 uses
   CdxWindowsVersion, CdxFileFinder, CdxHTMLmask, CdxUtils, CdxNibble, 
-  LazarusPackageIntf;
+  CdxWinamp, LazarusPackageIntf;
 
 implementation
 
