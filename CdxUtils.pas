@@ -4,7 +4,7 @@ unit CdxUtils;
 Unit Information:
 ------------------------------------------------------------------------
 Name:       CdxUtils
-Version:    1.1
+Version:    1.2
 Purpose:    Set of additional helper functions
 Copyright:  Alexander Feuster
 Contact:    alexander.feuster@gmail.com
@@ -35,6 +35,13 @@ Version History:
                     function IsDriveFat()
                     function IsDriveNTFS()
                     function GetFileSize()
+                    function UnicodeStringReplace() moved to CdxStrUtils unit
+                    function UTF8Chr() moved to CdxStrUtils unit
+                    function Split() moved to CdxStrUtils unit
+                    function SubnetFromIPv4() moved to CdxStrUtils unit
+                    function HexToBinStr() moved to CdxStrUtils unit
+                    function IntToBinStr() moved to CdxStrUtils unit
+                    function SecondsToTimeString() moved to CdxStrUtils unit
 
 }
 {$mode objfpc}{$H+}
@@ -42,7 +49,7 @@ Version History:
 interface
 
 uses
-  Classes, SysUtils, StrUtils, Windows, Process;
+  Classes, SysUtils, Windows, Process;
 
 procedure ApplicationRestart;
 function ApplicationVersion(const ShortForm: Boolean = false): String;
@@ -50,15 +57,8 @@ function ComPortExists(COM: Integer): Boolean;
 function GetDriveFormat(const DriveLetter: Char = 'C'): String;
 function GetFileSize(FileName: String): Int64;
 function GetFileVersion(Filename: String; const ShortForm: Boolean = false): String;
-function HexToBinStr(HexString: String): String;
-function IntToBinStr(Value: Integer): String;
 function IsDriveFAT(const DriveLetter: Char = 'C'): Boolean;
 function IsDriveNTFS(const DriveLetter: Char = 'C'): Boolean;
-function UnicodeStringReplace(const S, OldPattern, NewPattern: UnicodeString;  Flags: TReplaceFlags): UnicodeString;
-function UTF8Chr(Unicode: Cardinal): UTF8String;
-function SecondsToTimeString(Seconds: Integer; SecondsAsMilliseconds: Boolean = false): String;
-function Split(Delimiter: Char; Text: String): TStrings;
-function SubnetFromIPv4(IP: String): String;
 procedure WindowsLogoff;
 procedure WindowsRestart(const forced: Boolean = true; const Delay: Byte = 1; const Comment: String ='');
 procedure WindowsShutdown(const forced: Boolean = true; const Delay: Byte = 1; const Comment: String ='');
@@ -208,42 +208,6 @@ begin
     end;
 end;
 
-function HexToBinStr(HexString: String): String;
-//Converts a hexadecimal String to a binary String
-const
-  //String array for the binary value Bits from 0 to 15
-  HexBits: array [0..15] of String =
-    ('0000', '0001', '0010', '0011',
-     '0100', '0101', '0110', '0111',
-     '1000', '1001', '1010', '1011',
-     '1100', '1101', '1110', '1111');
-
-var
-  Index: Integer;
-
-begin
-  //remove trailing $ in case of
-  if LeftStr(HexString,1)='$' then
-    HexString:=RightStr(HexString, Length(HexString)-1);
-  //remove trailing # in case of
-  if LeftStr(HexString,1)='#' then
-    HexString:=RightStr(HexString, Length(HexString)-1);
-  //remove trailing 0x in case of
-  if LeftStr(HexString,2)='0x' then
-    HexString:=RightStr(HexString, Length(HexString)-2);
-
-  //add for every Hexadecimal char the according binary string part
-  Result:='';
-  for Index:=Length(HexString) DownTo 1 do //start String creation with MSB (Most Significat Bit = most left Bit)
-    Result:=HexBits[StrToInt('$'+HexString[Index])]+Result;
-end;
-
-function IntToBinStr(Value: Integer): String;
-//Converts a hexadecimal String to a binary String
-begin
-  result:=HexToBinStr(IntToHex(Value,SizeOf(Integer)));
-end;
-
 function IsDriveFAT(const DriveLetter: Char = 'C'): Boolean;
 //Check if a drive partition is FAT/FAT32 formatted
 begin
@@ -260,107 +224,6 @@ begin
     result:=true
   else
     result:=false;
-end;
-
-function UnicodeStringReplace(const S, OldPattern, NewPattern: UnicodeString;  Flags: TReplaceFlags): UnicodeString;
-//Unicode StringReplace() variant based on original SysUtil function
-var
-  Srch,OldP,RemS: UnicodeString; // Srch and Oldp can contain uppercase versions of S,OldPattern
-  P : Integer;
-begin
-  Srch:=S;
-  OldP:=OldPattern;
-  if rfIgnoreCase in Flags then
-    begin
-    Srch:=WideUpperCase(Srch);
-    OldP:=WideUpperCase(OldP);
-    end;
-  RemS:=S;
-  Result:='';
-  while (Length(Srch)<>0) do
-    begin
-    P:=Pos(OldP, Srch);
-    if P=0 then
-      begin
-      Result:=Result+RemS;
-      Srch:='';
-      end
-    else
-      begin
-      Result:=Result+Copy(RemS,1,P-1)+NewPattern;
-      P:=P+Length(OldP);
-      RemS:=Copy(RemS,P,Length(RemS)-P+1);
-      if not (rfReplaceAll in Flags) then
-        begin
-        Result:=Result+RemS;
-        Srch:='';
-        end
-      else
-         Srch:=Copy(Srch,P,Length(Srch)-P+1);
-      end;
-    end;
-end;
-
-function UTF8Chr(Unicode: Cardinal): UTF8String;
-//UTF8 compatible Chr() function
-var
-  UTF8Char: UTF8String;
-
-begin
-  //make sure Unicode does not exceed 2 bytes
-  if Unicode>$FFFF then
-    Unicode:=$FFFF;
-  //do conversion
-  UTF8Char:=WideChar(Unicode);
-  result:=Utf8Encode(UTF8Char);
-end;
-
-function SecondsToTimeString(Seconds: Integer; SecondsAsMilliseconds: Boolean = false): String;
-//Converts (milli)seconds numerical value to a time string with format "xx:xx:xx"
-var
-  Hours, Minutes: Integer;
-
-begin
-  try
-    //Convert milliseconds to seconds
-    if SecondsAsMilliseconds=true then
-      Seconds:=round(Seconds/1000);
-    //do not allow more seconds than the maximum value of "99:59:59"
-    if Seconds>359999 then
-      Seconds:=359999;
-    //do string conversion
-    Hours:=(Seconds div 3600);
-    Seconds:=Seconds-(Hours*3600);
-    Minutes:=(Seconds div 60);
-    Seconds:=Seconds-(Minutes*60);
-    result:= FormatFloat('00', Hours)+':'+FormatFloat('00', Minutes)+':'+FormatFloat('00', Seconds);
-  except
-    //default fallback result
-    result:='00:00:00';
-  end;
-end;
-
-function Split(Delimiter: Char; Text: String): TStrings;
-//Simple String Split function
-var
-  TextParts: TStringList;
-
-begin
-  TextParts:=TStringList.Create;
-  TextParts.Clear;
-  TextParts.StrictDelimiter:=true;
-  TextParts.Delimiter:=Delimiter;
-  TextParts.DelimitedText:=Text;
-  result:=TextParts;
-end;
-
-function SubnetFromIPv4(IP: String): String;
-//extract Subnet from a given IPv4 String
-begin
-  if AnsiPos('.',IP)=0 then
-    Result:=''
-  else
-    Result:=AnsiLeftStr(IP,LastDelimiter('.',IP));
 end;
 
 procedure Call_Shutdown_Exe(Mode: Byte; const forced: Boolean = true; const Delay: Byte = 1; const Comment: String ='');
