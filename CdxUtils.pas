@@ -29,6 +29,7 @@ Version History:
                     procedure WindowsShutdown()
                     procedure ApplicationRestart()
                     function ApplicationVersion()
+1.2   19.12.2013    function ComPortExists()
 
 }
 {$mode objfpc}{$H+}
@@ -40,6 +41,7 @@ uses
 
 procedure ApplicationRestart;
 function ApplicationVersion(const ShortForm: Boolean = false): String;
+function ComPortExists(COM: Integer): Boolean;
 function GetFileVersion(Filename: String; const ShortForm: Boolean = false): String;
 function HexToBinStr(HexString: String): String;
 function IntToBinStr(Value: Integer): String;
@@ -60,13 +62,18 @@ var
   Process: TProcess;
 
 begin
+  //Create the process for the new instance of the application
   Process:=TProcess.Create(nil);
   Process.CommandLine:=GetCommandLine;
   Process.Options:=Process.Options+[];
   Process.ShowWindow:=swoShow;
   Process.Priority:=ppNormal;
+
+  //run and free process
   Process.Execute;
   Process.Free;
+
+  //close old instance of application
   TerminateProcess(GetCurrentProcess, 1);
 end;
 
@@ -74,6 +81,23 @@ function ApplicationVersion(const ShortForm: Boolean = false): String;
 //Retrieve the file version of the actual application
 begin
   result:=GetFileVersion(StringReplace(ExtractFilePath(GetCommandLine)+ExtractFilename(GetCommandLine),'"','',[rfReplaceAll, rfIgnoreCase]),ShortForm);
+end;
+
+function ComPortExists(COM: Integer): Boolean;
+//Check if a COM port does exist
+var
+  DeviceHandle: THandle;
+
+begin
+  DeviceHandle:=0;
+  result:=false;
+  try
+    DeviceHandle:=CreateFile(PChar('COM'+IntToStr(COM)), GENERIC_READ or GENERIC_WRITE, 0, nil, OPEN_EXISTING, 0, 0);
+    if DeviceHandle<>INVALID_HANDLE_VALUE then
+      result:=true;
+  finally
+    CloseHandle(DeviceHandle);
+  end;
 end;
 
 function GetFileVersion(Filename: String; const ShortForm: Boolean = false): String;
