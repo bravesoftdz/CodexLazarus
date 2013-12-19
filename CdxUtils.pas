@@ -30,6 +30,7 @@ Version History:
                     procedure ApplicationRestart()
                     function ApplicationVersion()
 1.2   19.12.2013    function ComPortExists()
+                    function SecondsToTimeString()
 
 }
 {$mode objfpc}{$H+}
@@ -47,6 +48,7 @@ function HexToBinStr(HexString: String): String;
 function IntToBinStr(Value: Integer): String;
 function UnicodeStringReplace(const S, OldPattern, NewPattern: UnicodeString;  Flags: TReplaceFlags): UnicodeString;
 function UTF8Chr(Unicode: Cardinal): UTF8String;
+function SecondsToTimeString(Seconds: Integer; SecondsAsMilliseconds: Boolean = false): String;
 function Split(Delimiter: Char; Text: String): TStrings;
 function SubnetFromIPv4(IP: String): String;
 procedure WindowsLogoff;
@@ -228,6 +230,30 @@ begin
     Unicode:=$FFFF;
   UTF8Char:=WideChar(Unicode);
   result:=Utf8Encode(UTF8Char);
+end;
+
+function SecondsToTimeString(Seconds: Integer; SecondsAsMilliseconds: Boolean = false): String;
+//Converts (milli)seconds numerical value to a time string with format "xx:xx:xx"
+var
+  Hours, Minutes: Integer;
+
+begin
+  try
+    //Convert milliseconds to seconds
+    if SecondsAsMilliseconds=true then
+      Seconds:=round(Seconds/1000);
+    //do not allow more seconds than the maximum value of "99:59:59"
+    if Seconds>359999 then
+      Seconds:=359999;
+    //do string conversion
+    Hours:=(Seconds div 3600);
+    Seconds:=Seconds-(Hours*3600);
+    Minutes:=(Seconds div 60);
+    Seconds:=Seconds-(Minutes*60);
+    result:= FormatFloat('00', Hours)+':'+FormatFloat('00', Minutes)+':'+FormatFloat('00', Seconds);
+  except
+    result:='00:00:00';
+  end;
 end;
 
 function Split(Delimiter: Char; Text: String): TStrings;
