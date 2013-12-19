@@ -31,6 +31,9 @@ Version History:
                     function ApplicationVersion()
 1.2   19.12.2013    function ComPortExists()
                     function SecondsToTimeString()
+                    function GetDriveFormat()
+                    function IsDriveFat()
+                    function IsDriveNTFS()
 
 }
 {$mode objfpc}{$H+}
@@ -43,9 +46,12 @@ uses
 procedure ApplicationRestart;
 function ApplicationVersion(const ShortForm: Boolean = false): String;
 function ComPortExists(COM: Integer): Boolean;
+function GetDriveFormat(const DriveLetter: Char = 'C'): String;
 function GetFileVersion(Filename: String; const ShortForm: Boolean = false): String;
 function HexToBinStr(HexString: String): String;
 function IntToBinStr(Value: Integer): String;
+function IsDriveFAT(const DriveLetter: Char = 'C'):Boolean;
+function IsDriveNTFS(const DriveLetter: Char = 'C'):Boolean;
 function UnicodeStringReplace(const S, OldPattern, NewPattern: UnicodeString;  Flags: TReplaceFlags): UnicodeString;
 function UTF8Chr(Unicode: Cardinal): UTF8String;
 function SecondsToTimeString(Seconds: Integer; SecondsAsMilliseconds: Boolean = false): String;
@@ -99,6 +105,30 @@ begin
       result:=true;
   finally
     CloseHandle(DeviceHandle);
+  end;
+end;
+
+function GetDriveFormat(const DriveLetter: Char = 'C'): String;
+//Get filesystem format
+var
+  lpVolumeNameBuffer: PChar;
+  lpVolumeSerialNumber: PDWORD;
+  lpFileSystemNameBuffer: PChar;
+  lpFileSystemFlags: DWORD;
+  lpMaximumComponentLength: DWORD;
+
+begin
+  result:='';
+  try
+    GetMem(lpVolumeNameBuffer, MAX_PATH);
+    GetMem(lpVolumeSerialNumber, MAX_PATH);
+    GetMem(lpFileSystemNameBuffer, MAX_PATH);
+    GetVolumeInformation(PChar(DriveLetter+':\'), lpVolumeNameBuffer, MAX_PATH, lpVolumeSerialNumber, lpMaximumComponentLength, lpFileSystemFlags, lpFileSystemNameBuffer, MAX_PATH);
+    result:=StrPas(lpFileSystemNameBuffer);
+  finally
+    FreeMem(lpVolumeNameBuffer, MAX_PATH);
+    FreeMem(lpVolumeSerialNumber, MAX_PATH);
+    FreeMem(lpFileSystemNameBuffer, MAX_PATH);
   end;
 end;
 
@@ -179,6 +209,24 @@ function IntToBinStr(Value: Integer): String;
 //Converts a hexadecimal String to a binary String
 begin
   result:=HexToBinStr(IntToHex(Value,SizeOf(Integer)));
+end;
+
+function IsDriveFAT(const DriveLetter: Char = 'C'):Boolean;
+//Check if a drive partition is FAT/FAT32 formatted
+begin
+  if Pos('FAT',GetDriveFormat(DriveLetter))>0 then
+    result:=true
+  else
+    result:=false;
+end;
+
+function IsDriveNTFS(const DriveLetter: Char = 'C'):Boolean;
+//Check if a drive partition is NTFS formatted
+begin
+  if Pos('NTFS',GetDriveFormat(DriveLetter))>0 then
+    result:=true
+  else
+    result:=false;
 end;
 
 function UnicodeStringReplace(const S, OldPattern, NewPattern: UnicodeString;  Flags: TReplaceFlags): UnicodeString;
