@@ -71,7 +71,7 @@ begin
 end;
 
 function ComPortExists(COM: Integer): Boolean;
-//Check if a COM port does exist
+//Check if a serial COM port does exist
 var
   DeviceHandle: THandle;
 
@@ -90,13 +90,15 @@ begin
 end;
 
 function EnumerateComPorts: TStrings;
-//Enumerate available COM ports winthin range from COM0 to COM25
+//Enumerate available serial COM ports within range from COM0 to COM25
 var
   Port: Byte;
 
 begin
+  //create empty return value as default
   result:=TStringList.Create;
   result.Clear;
+  //check every possible COM port if it is available (attention: an existing but already opened COM port will not be available!)
   for Port:=0 to 25 do
     begin
       if ComPortExists(Port)=true then
