@@ -23,6 +23,8 @@ Version History:
                     function HexToBinStr() moved from CdxUtils unit
                     function IntToBinStr() moved from CdxUtils unit
                     function SecondsToTimeString() moved from CdxUtils unit
+                    function BinStrToHex()
+                    function BinStrToInt()
 
 }
 {$mode objfpc}{$H+}
@@ -30,8 +32,10 @@ Version History:
 interface
 
 uses
-  Classes, SysUtils, StrUtils;
+  Classes, SysUtils, StrUtils, Math;
 
+function BinStrToHex(BinString: String): String;
+function BinStrToInt(BinString: String): Integer;
 function HexToBinStr(HexString: String): String;
 function IntToBinStr(Value: Integer): String;
 function UnicodeStringReplace(const S, OldPattern, NewPattern: UnicodeString;  Flags: TReplaceFlags): UnicodeString;
@@ -42,6 +46,27 @@ function SubnetFromIPv4(IP: String): String;
 
 
 implementation
+
+function BinStrToHex(BinString: String): String;
+//Converts a binary String back to a hexadecimal String
+begin
+  result:=IntToHex(BinStrToInt(BinString),1);
+end;
+
+function BinStrToInt(BinString: String): Integer;
+//Converts a binary String back to an Integer
+var
+  Index: Integer;
+  Int: Integer;
+
+begin
+  Result:=0;
+  for Index:=0 To Length(BinString)-1 do //start conversion with MSB (Most Significat Bit = most left Bit)
+    begin
+      if BinString[Index+1]='1' then
+        Result:=Result+Trunc(IntPower(2,(Length(BinString)-Index-1)));
+    end;
+end;
 
 function HexToBinStr(HexString: String): String;
 //Converts a hexadecimal String to a binary String
@@ -71,12 +96,24 @@ begin
   Result:='';
   for Index:=Length(HexString) DownTo 1 do //start String creation with MSB (Most Significat Bit = most left Bit)
     Result:=HexBits[StrToInt('$'+HexString[Index])]+Result;
+
+  //remove trailing Zero´s
+  Index:=0;
+  while Index<Length(result) do
+    begin
+      if result[Index]='1' then
+        begin
+          result:=RightStr(result,Length(result)-Index+1);
+          break;
+        end;
+      inc(Index);
+    end;
 end;
 
 function IntToBinStr(Value: Integer): String;
-//Converts a hexadecimal String to a binary String
+//Converts a decimal String to a binary String
 begin
-  result:=HexToBinStr(IntToHex(Value,SizeOf(Integer)));
+  result:=HexToBinStr(IntToHex(Value,1));
 end;
 
 function UnicodeStringReplace(const S, OldPattern, NewPattern: UnicodeString;  Flags: TReplaceFlags): UnicodeString;
