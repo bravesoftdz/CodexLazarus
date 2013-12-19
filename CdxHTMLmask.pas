@@ -19,6 +19,7 @@ Version History:
 1.1   14.12.2013    Rework as FPC/Lazarus version (Unicode)
                     Moved entities into a constant array
 1.1b  17.12.2013    added Github URL
+1.2   19.12.2013    removed unused type TEntityList
 
 ------------------------------------------------------------------------
 Additional Technical Information:
@@ -46,9 +47,6 @@ type
     Unicode:  UnicodeString;
     HTML:     UnicodeString;
   end;
-
-type
-  TEntityList = array[0..2] of TEntity;
 
 function UnicodeStringReplace(const S, OldPattern, NewPattern: UnicodeString;  Flags: TReplaceFlags): UnicodeString;
 {$IFDEF MASK}
