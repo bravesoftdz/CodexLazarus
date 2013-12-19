@@ -20,7 +20,7 @@ Version History:
                     function UnicodeStringReplace()
                     function UTF8Chr()
                     function Split()
-                    function SubnetFromIP()
+                    function SubnetFromIPv4()
 1.0b  17.12.2013    added Github URL
 1.1   18.12.2013    function HexToBinStr()
                     function IntToBinStr()
@@ -34,6 +34,7 @@ Version History:
                     function GetDriveFormat()
                     function IsDriveFat()
                     function IsDriveNTFS()
+                    function GetFileSize()
 
 }
 {$mode objfpc}{$H+}
@@ -47,11 +48,12 @@ procedure ApplicationRestart;
 function ApplicationVersion(const ShortForm: Boolean = false): String;
 function ComPortExists(COM: Integer): Boolean;
 function GetDriveFormat(const DriveLetter: Char = 'C'): String;
+function GetFileSize(FileName: String): Int64;
 function GetFileVersion(Filename: String; const ShortForm: Boolean = false): String;
 function HexToBinStr(HexString: String): String;
 function IntToBinStr(Value: Integer): String;
-function IsDriveFAT(const DriveLetter: Char = 'C'):Boolean;
-function IsDriveNTFS(const DriveLetter: Char = 'C'):Boolean;
+function IsDriveFAT(const DriveLetter: Char = 'C'): Boolean;
+function IsDriveNTFS(const DriveLetter: Char = 'C'): Boolean;
 function UnicodeStringReplace(const S, OldPattern, NewPattern: UnicodeString;  Flags: TReplaceFlags): UnicodeString;
 function UTF8Chr(Unicode: Cardinal): UTF8String;
 function SecondsToTimeString(Seconds: Integer; SecondsAsMilliseconds: Boolean = false): String;
@@ -129,6 +131,28 @@ begin
     FreeMem(lpVolumeNameBuffer, MAX_PATH);
     FreeMem(lpVolumeSerialNumber, MAX_PATH);
     FreeMem(lpFileSystemNameBuffer, MAX_PATH);
+  end;
+end;
+
+function GetFileSize(FileName: String): Int64;
+//Get size of a file in Bytes
+var
+  FileStream: TFileStream;
+
+begin
+  //default return value
+  result:=0;
+
+  //check if file does exist
+  if FileExists(FileName)=false then
+    exit;
+
+  //create afilestream and read its size
+  try
+    FileStream:=TFileStream.Create(FileName,fmOpenRead OR fmShareDenyWrite);
+    result:=FileStream.Size;
+  finally
+    FileStream.Free;
   end;
 end;
 
@@ -211,7 +235,7 @@ begin
   result:=HexToBinStr(IntToHex(Value,SizeOf(Integer)));
 end;
 
-function IsDriveFAT(const DriveLetter: Char = 'C'):Boolean;
+function IsDriveFAT(const DriveLetter: Char = 'C'): Boolean;
 //Check if a drive partition is FAT/FAT32 formatted
 begin
   if Pos('FAT',GetDriveFormat(DriveLetter))>0 then
@@ -220,7 +244,7 @@ begin
     result:=false;
 end;
 
-function IsDriveNTFS(const DriveLetter: Char = 'C'):Boolean;
+function IsDriveNTFS(const DriveLetter: Char = 'C'): Boolean;
 //Check if a drive partition is NTFS formatted
 begin
   if Pos('NTFS',GetDriveFormat(DriveLetter))>0 then
