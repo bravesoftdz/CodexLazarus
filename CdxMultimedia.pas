@@ -36,7 +36,7 @@ begin
   if Value<=MaxValue then
     result:=round(2500*log10(Value/MaxValue))
   else
-    result:=0;
+    result:=0;  //this is the maximal volume value for DirectShow
 end;
 
 
