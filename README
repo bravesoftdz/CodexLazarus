@@ -3,6 +3,7 @@ Codex Lazarus is a set of Lazarus/FPC units released under the General Public Li
 http://www.gnu.org/licenses/gpl-2.0
 
 CdxFileFinder:		Find file(s)/folder(s) with optional graphical progress
+CdxFileUtils:		Set of additional file and filesystem helper functions
 CdxHTMLMask:		Mask special chars to HTML entities and vice versa
 CdxID3v1:		Read ID3 V1 Tags from MP3 music files
 CdxMediaInfo:		Header for dynamic loading of functions from the MediaInfo DLL
@@ -10,7 +11,8 @@ CdxMediaInfo:		Header for dynamic loading of functions from the MediaInfo DLL
 CdxMultimedia:		Set of additional multimedia helper functions
 CdxNibble:		Provides functions and types for a Nibble (4 Bit data type)
 CdxStrUtils:		Set of additional String helper functions
-CdxUtils:		Set of additional helper functions
+CdxSysUtils:		Set of additional system and application helper functions
+CdxUtils:		Set of additional helper functions (actually without any functionality!)
 CdxWinamp:		Remote access to Winamp for playback of files and URLs
 CdxWindowsVersion:	Identify Windows version
 
