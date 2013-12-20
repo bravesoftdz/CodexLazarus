@@ -38,6 +38,10 @@ Version History:
                     function StreamBitRateString()
                     function VideoBitRateString()
                     function AudioBitRateString()
+                    function DisplayAspectRatioString()
+                    function PixelAspectRatioString()
+                    function VideoFrameRate()
+                    function AudioSamplingRateString()
 
 ------------------------------------------------------------------------
 Additional Technical Information:
@@ -110,6 +114,10 @@ type
   function StreamBitRateString(FilePath: String; const StreamNumber: Integer = 0): String;
   function VideoBitRateString(FilePath: String; const StreamNumber: Integer = 0): String;
   function AudioBitRateString(FilePath: String; const StreamNumber: Integer = 0): String;
+  function DisplayAspectRatioString(FilePath: String; const StreamNumber: Integer = 0): String;
+  function PixelAspectRatioString(FilePath: String; const StreamNumber: Integer = 0): String;
+  function VideoFrameRate(FilePath: String; const StreamNumber: Integer = 0): String;
+  function AudioSamplingRateString(FilePath: String; const StreamNumber: Integer = 0): String;
 
 var
   MediaFile: LongWord;
@@ -508,6 +516,70 @@ begin
   //read audio stream bitrate
   if OpenMediaFile(FilePath)=true then
     result:=MediaInfo_Get(MediaFile, Stream_Audio, StreamNumber, 'BitRate/String', 1, 0);
+  except
+  result:='';
+  end;
+end;
+
+function DisplayAspectRatioString(FilePath: String; const StreamNumber: Integer = 0): String;
+//Video display aspect ratio
+begin
+  result:='';
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+    exit;
+  try
+  //read video stream display aspect ratio
+  if OpenMediaFile(FilePath)=true then
+    result:=MediaInfo_Get(MediaFile, Stream_Video, StreamNumber, 'DisplayAspectRatio/String', 1, 0);
+  except
+  result:='';
+  end;
+end;
+
+function PixelAspectRatioString(FilePath: String; const StreamNumber: Integer = 0): String;
+//Pixel aspect ratio
+begin
+  result:='';
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+    exit;
+  try
+  //read video stream pixel aspect ratio
+  if OpenMediaFile(FilePath)=true then
+    result:=MediaInfo_Get(MediaFile, Stream_Video, StreamNumber, 'PixelAspectRatio/String', 1, 0);
+  except
+  result:='';
+  end;
+end;
+
+function VideoFrameRate(FilePath: String; const StreamNumber: Integer = 0): String;
+//Video frame rate
+begin
+  result:='';
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+    exit;
+  try
+  //read video frame rate
+  if OpenMediaFile(FilePath)=true then
+    result:=MediaInfo_Get(MediaFile, Stream_Video, StreamNumber, 'FrameRate/String', 1, 0);
+  except
+  result:='';
+  end;
+end;
+
+function AudioSamplingRateString(FilePath: String; const StreamNumber: Integer = 0): String;
+//Audio stream sampling rate
+begin
+  result:='';
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+    exit;
+  try
+  //read audio stream sampling rate
+  if OpenMediaFile(FilePath)=true then
+    result:=MediaInfo_Get(MediaFile, Stream_Audio, StreamNumber, 'SamplingRate/String', 1, 0);
   except
   result:='';
   end;
