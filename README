@@ -12,7 +12,7 @@ CdxNibble:		Provides functions and types for a Nibble (4 Bit data type)
 CdxStrUtils:		Set of additional String helper functions
 CdxSysUtils:		Set of additional system and application helper functions
 CdxUtils:		Set of additional helper functions (actually no functionality!)
-			(not in Codex Lazarus package V1.2 included)
+			(not in Codex Lazarus package V1.x included)
 CdxWinamp:		Remote access to Winamp for playback of files and URLs
 CdxWindowsVersion:	Identify Windows version
 
