@@ -364,8 +364,8 @@ library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.
 
 "/>
-    <Version Major="1" Minor="2"/>
-    <Files Count="10">
+    <Version Major="1" Minor="3"/>
+    <Files Count="11">
       <Item1>
         <Filename Value="CdxWindowsVersion.pas"/>
         <UnitName Value="CdxWindowsVersion"/>
@@ -406,6 +406,10 @@ Public License instead of this License.
         <Filename Value="CdxSysUtils.pas"/>
         <UnitName Value="CdxSysUtils"/>
       </Item10>
+      <Item11>
+        <Filename Value="CdxMediaInfo.pas"/>
+        <UnitName Value="CdxMediaInfo"/>
+      </Item11>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="3">
