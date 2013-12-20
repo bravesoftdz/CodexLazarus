@@ -4,7 +4,7 @@ unit CdxMediaInfo;
 Unit Information:
 ------------------------------------------------------------------------
 Name:       CdxMediaInfo
-Version:    1.1
+Version:    1.2
 Purpose:    Header for dynamic loading of functions from the MediaInfo DLL
 Copyright:  Alexander Feuster
 Contact:    alexander.feuster@gmail.com
@@ -17,6 +17,20 @@ Version History:
 ------------------------------------------------------------------------
 1.0   11.03.2008    Initial version written in D7
 1.1   18.12.2013    Rework as FPC/Lazarus version
+1.2   20.12.2013    again a complete rework based on older source
+                    function MediaInfoDLLVersion()
+                    function MediaInfoFileFormat()
+                    function MediaInfoFileSize()
+                    function MediaInfoFilePlayTime()
+                    function MediaInfoStreamCount()
+                    function MediaInfoVideoCount()
+                    function MediaInfoAudioCount()
+                    function MediaInfoFileCodecs()
+                    function MediaInfoFileVideoCodecs()
+                    function MediaInfoFileAudioCodecs()
+                    function MediaInfoFileFirstVideoCodec()
+                    function MediaInfoFileFirstAudioCodec()
+
 
 ------------------------------------------------------------------------
 Additional Technical Information:
@@ -33,6 +47,7 @@ http://mediaarea.net/de/MediaInfo   (german site)
 http://mediaarea.net/en/MediaInfo   (english site)
 
 }
+
 //enables in FPC/Lazarus Delphi compatibility which makes porting easier since original code was written in Delphi
 {$ifdef fpc}
 {$mode delphi}
@@ -41,7 +56,7 @@ http://mediaarea.net/en/MediaInfo   (english site)
 interface
 
 uses
-  Windows, SysUtils;
+  Windows, SysUtils, Classes, LazUTF8;
 
 type
   {$warnings off}
@@ -67,26 +82,29 @@ type
   TMediaInfoA_Count_Get=function (Handle: Cardinal; StreamKind: Integer; StreamNumber: Integer): Integer cdecl stdcall;
   {$warnings on}
 
-  function MilliSecondsToString(MilliSeconds: Int64): string;
+  procedure LOADDLL;
+  procedure UNLOADDLL;
+  function MilliSecondsToString(MilliSeconds: Int64): String;
 
-  function MediaInfoDLLVersion(): String;
-  function MediaInfoFileSize(FilePath: String): Int64;
+  function MediaInfoDLLVersion: String;
   function MediaInfoFileFormat(FilePath: String): String;
-  function MediaInfoFileCodec(FilePath: String): String;
-  function MediaInfoVideoCount(FilePath: String): String;
-  function MediaInfoFileVideoWidth(FilePath: String): Integer;
-  function MediaInfoFileVideoHeight(FilePath: String): Integer;
-  function MediaInfoFileVideoAspect(FilePath: String): String;
-  function MediaInfoFileBitrate(FilePath: String): Integer;
+  function MediaInfoFileSize(FilePath: String): Int64;
   function MediaInfoFilePlayTime(FilePath: String): Int64;
+  function MediaInfoStreamCount(FilePath: String): Integer;
+  function MediaInfoVideoCount(FilePath: String): Integer;
+  function MediaInfoAudioCount(FilePath: String): Integer;
+  function MediaInfoFileCodecs(FilePath: String): TStrings;
+  function MediaInfoFileVideoCodecs(FilePath: String): TStrings;
+  function MediaInfoFileAudioCodecs(FilePath: String): TStrings;
+  function MediaInfoFileFirstVideoCodec(FilePath: String): String;
+  function MediaInfoFileFirstAudioCodec(FilePath: String): String;
 
 var
   MediaFile: LongWord;
   PMediaFile: PWideChar;
   StreamKind: Integer;
-  MediaInfoString: WideString;
 
-  MediaInfo_DLLHandle: THandle;
+  MediaInfo_DLLHandle: THandle = 0;
   MediaInfo_DLL_OK: Boolean;
   MediaInfo_New: TMediaInfo_New;
   MediaInfo_Delete: TMediaInfo_Delete;
@@ -132,11 +150,23 @@ Const
   InfoOption_ShowInSupported: Cardinal = 2;
   InfoOption_TypeOfValue: Cardinal = 3;
   InfoOption_Max: Cardinal = 4;
+  InformOption_Nothing: Cardinal = 0;
 
 
 implementation
 
-function MilliSecondsToString(MilliSeconds: Int64): string;
+function OpenMediaFile(FilePath: String): Boolean;
+//open the file which shall be examined
+begin
+  GetMem(PMediaFile, 512);
+  PMediaFile:=StringToWideChar(FilePath, PMediaFile, 256);
+  if MediaInfo_Open(MediaFile,PMediaFile)=1 then
+    result:=true
+  else
+    result:=false;
+end;
+
+function MilliSecondsToString(MilliSeconds: Int64): String;
 //Milliseconds to String
 var
   Hours: Integer;
@@ -156,254 +186,251 @@ begin
   end;
 end;
 
-function MediaInfoDLLVersion(): String;
+function MediaInfoDLLVersion: String;
 //MediaInfo DLL Version
 begin
+  result:='';
+  //check if DLL is loaded
   if MediaInfo_DLL_OK=false then
-    begin
-      Result:='';
-      exit;
-    end;
+    exit;
   try
-   MediaInfoString:=MediaInfo_Option(0, 'Info_Version', '');
-   Result:=MediaInfoString;
+  result:=MediaInfo_Option(0, 'Info_Version', '');
   except
-    Result:='';
-  end;
-end;
-
-function MediaInfoFileSize(FilePath: String): Int64;
-//Media File Filesize
-begin
-  if MediaInfo_DLL_OK=false then
-    begin
-      Result:=0;
-      exit;
-    end;
-  try
-  MediaFile:=MediaInfo_New;
-  GetMem(PMediaFile, 512);
-  PMediaFile:=StringToWideChar(FilePath, PMediaFile, 256);
-  MediaInfo_Open(MediaFile,PMediaFile);
-  MediaInfoString:=MediaInfo_Get(MediaFile, 0, 0, 'FileSize', 1, 0);
-  Result:=StrToInt64Def(MediaInfoString,0);
-  MediaInfo_Close(MediaFile);
-  MediaInfo_Delete(MediaFile);
-  except
-  Result:=0;
+  result:='';
   end;
 end;
 
 function MediaInfoFileFormat(FilePath: String): String;
-//Media File Format
+//Media file general stream format
 begin
+  result:='';
+  //check if DLL is loaded
   if MediaInfo_DLL_OK=false then
-    begin
-      Result:='';
-      exit;
-    end;
+    exit;
   try
-  MediaFile:=MediaInfo_New;
-  GetMem(PMediaFile, 512);
-  PMediaFile:=StringToWideChar(FilePath, PMediaFile, 256);
-  MediaInfo_Open(MediaFile,PMediaFile);
-  MediaInfoString:=MediaInfo_Get(MediaFile, Stream_General, 0, 'Format', 1, 0);
-  Result:=MediaInfoString;
-  MediaInfo_Close(MediaFile);
-  MediaInfo_Delete(MediaFile);
+  //read general stream format
+  if OpenMediaFile(FilePath)=true then
+    result:=MediaInfo_Get(MediaFile, Stream_General, 0, 'Format', 1, 0);
   except
-  Result:='';
+  result:='';
   end;
 end;
 
-function MediaInfoFileCodec(FilePath: String): String;
-//Media File Codec
-var
-  Buffer: String;
-
+function MediaInfoFileSize(FilePath: String): Int64;
+//Media filesize
 begin
+  Result:=0;
+  //check if DLL is loaded
   if MediaInfo_DLL_OK=false then
-    begin
-      Result:='';
-      exit;
-    end;
+    exit;
   try
-  MediaFile:=MediaInfo_New;
-  GetMem(PMediaFile, 512);
-  PMediaFile:=StringToWideChar(FilePath, PMediaFile, 256);
-  MediaInfo_Open(MediaFile,PMediaFile);
-  Buffer:=MediaInfo_Get(MediaFile, Stream_Video, 0, 'Format', 1, 0);
-  if Buffer<>'' then
-    MediaInfoString:=Buffer;
-  Buffer:=MediaInfo_Get(MediaFile, Stream_Audio, 0, 'Format', 1, 0);
-  if (Buffer<>'') and (Buffer<>MediaInfoString) then
-    MediaInfoString:=MediaInfoString+' / '+Buffer;
-  Result:=MediaInfoString;
-  MediaInfo_Close(MediaFile);
-  MediaInfo_Delete(MediaFile);
+  //read filesize
+  if OpenMediaFile(FilePath)=true then
+    result:=StrToInt64Def(MediaInfo_Get(MediaFile, 0, 0, 'FileSize', 1, 0),0);
   except
-  Result:='';
+  Result:=0;
   end;
 end;
 
 function MediaInfoFilePlayTime(FilePath: String): Int64;
-//Media File Playtime
+//Media file duration
 begin
+  Result:=0;
+  //check if DLL is loaded
   if MediaInfo_DLL_OK=false then
-    begin
-      Result:=0;
-      exit;
-    end;
+    exit;
   try
-  MediaFile:=MediaInfo_New;
-  GetMem(PMediaFile, 512);
-  PMediaFile:=StringToWideChar(FilePath, PMediaFile, 256);
-  MediaInfo_Open(MediaFile,PMediaFile);
-  MediaInfoString:=MediaInfo_Get(MediaFile, 0, 0, 'PlayTime', 1, 0);
-  Result:=StrToInt64Def(MediaInfoString,0);
-  MediaInfo_Close(MediaFile);
-  MediaInfo_Delete(MediaFile);
+  //read duration from file
+  if OpenMediaFile(FilePath)=true then
+    result:=StrToInt64Def(MediaInfo_Get(MediaFile, 0, 0, 'PlayTime', 1, 0),0);
   except
   Result:=0;
   end;
 end;
 
-function MediaInfoVideoCount(FilePath: String): String;
-//Media File Video Track available
+function MediaInfoStreamCount(FilePath: String): Integer;
+//Media file stream count
 begin
+  Result:=0;
+  //check if DLL is loaded
   if MediaInfo_DLL_OK=false then
-    begin
-      Result:='';
-      exit;
-    end;
+    exit;
   try
-  MediaFile:=MediaInfo_New;
-  GetMem(PMediaFile, 512);
-  PMediaFile:=StringToWideChar(FilePath, PMediaFile, 256);
-  MediaInfo_Open(MediaFile,PMediaFile);
-  MediaInfoString:=MediaInfo_Get(MediaFile, Stream_General, 0, 'VideoCount', 1, 0);
-  Result:=MediaInfoString;
-  MediaInfo_Close(MediaFile);
-  MediaInfo_Delete(MediaFile);
-  except
-  Result:='';
-  end;
-end;
-
-function MediaInfoFileVideoWidth(FilePath: String): Integer;
-//Media File Video Width
-begin
-  if MediaInfo_DLL_OK=false then
-    begin
-      Result:=0;
-      exit;
-    end;
-  try
-  MediaFile:=MediaInfo_New;
-  GetMem(PMediaFile, 512);
-  PMediaFile:=StringToWideChar(FilePath, PMediaFile, 256);
-  MediaInfo_Open(MediaFile,PMediaFile);
-  MediaInfoString:=MediaInfo_Get(MediaFile, 1, 0, 'Width', 1, 0);
-  if MediaInfoString<>'' then
-    Result:=StrToInt(MediaInfoString)
-  else
-    Result:=0;
-  MediaInfo_Close(MediaFile);
-  MediaInfo_Delete(MediaFile);
+  //read stream count from file
+  if OpenMediaFile(FilePath)=true then
+    result:=StrToInt64Def(MediaInfo_Get(MediaFile, Stream_General, 0, 'StreamCount', 1, 0),0);
   except
   Result:=0;
   end;
 end;
 
-function MediaInfoFileVideoHeight(FilePath: String): Integer;
-//Media File Video Width
+function MediaInfoVideoCount(FilePath: String): Integer;
+//Media file video stream count
 begin
+  Result:=0;
+  //check if DLL is loaded
   if MediaInfo_DLL_OK=false then
-    begin
-      Result:=0;
-      exit;
-    end;
+    exit;
   try
-  MediaFile:=MediaInfo_New;
-  GetMem(PMediaFile, 512);
-  PMediaFile:=StringToWideChar(FilePath, PMediaFile, 256);
-  MediaInfo_Open(MediaFile,PMediaFile);
-  MediaInfoString:=MediaInfo_Get(MediaFile, 1, 0, 'Height', 1, 0);
-  if MediaInfoString<>'' then
-    Result:=StrToInt(MediaInfoString)
-  else
-    Result:=0;
-  MediaInfo_Close(MediaFile);
-  MediaInfo_Delete(MediaFile);
+  //read video stream count from file
+  if OpenMediaFile(FilePath)=true then
+    result:=StrToInt64Def(MediaInfo_Get(MediaFile, Stream_General, 0, 'VideoCount', 1, 0),0);
   except
   Result:=0;
   end;
 end;
 
-function MediaInfoFileVideoAspect(FilePath: String): String;
-//Media File Video Aspect
+function MediaInfoAudioCount(FilePath: String): Integer;
+//Media file audio stream count
 begin
+  Result:=0;
+  //check if DLL is loaded
   if MediaInfo_DLL_OK=false then
-    begin
-      Result:='';
-      exit;
-    end;
+    exit;
   try
-  MediaFile:=MediaInfo_New;
-  GetMem(PMediaFile, 512);
-  PMediaFile:=StringToWideChar(FilePath, PMediaFile, 256);
-  MediaInfo_Open(MediaFile,PMediaFile);
-  MediaInfoString:=MediaInfo_Get(MediaFile, 1, 0, 'AspectRatio/String', 1, 0);
-  Result:=MediaInfoString;
-  MediaInfo_Close(MediaFile);
-  MediaInfo_Delete(MediaFile);
-  except
-  Result:='';
-  end;
-end;
-
-function MediaInfoFileBitrate(FilePath: String): Integer;
-//Media File Bitrate
-begin
-  if MediaInfo_DLL_OK=false then
-    begin
-      Result:=0;
-      exit;
-    end;
-  try
-  MediaFile:=MediaInfo_New;
-  GetMem(PMediaFile, 512);
-  PMediaFile:=StringToWideChar(FilePath, PMediaFile, 256);
-  MediaInfo_Open(MediaFile,PMediaFile);
-  MediaInfoString:=MediaInfo_Get(MediaFile, 0, 0, 'BitRate', 1, 0);
-  if MediaInfoString<>'' then
-      Result:=StrToInt(MediaInfoString)
-  else
-    begin
-      MediaInfoString:=MediaInfo_Get(MediaFile, 1, 0, 'BitRate', 1, 0);
-      if MediaInfoString<>'' then
-        Result:=StrToInt(MediaInfoString)
-      else
-        begin
-          MediaInfoString:=MediaInfo_Get(MediaFile, 2, 0, 'BitRate', 1, 0);
-          if MediaInfoString<>'' then
-            Result:=StrToInt(MediaInfoString)
-          else
-            Result:=0;
-        end;
-    end;
-  MediaInfo_Close(MediaFile);
-  MediaInfo_Delete(MediaFile);
+  //read audio stream count from file
+  if OpenMediaFile(FilePath)=true then
+    result:=StrToInt64Def(MediaInfo_Get(MediaFile, Stream_General, 0, 'AudioCount', 1, 0),0);
   except
   Result:=0;
   end;
 end;
 
-initialization
+function MediaInfoFileCodecs(FilePath: String): TStrings;
+//Media file codecs
+var
+  Count: Integer;
+  VideoStreamCount: Integer;
+  AudioStreamCount: Integer;
+
+begin
+  //empty list as default return value
+  result:=TStringList.Create;
+  result.Clear;
+
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+      exit;
+
+  try
+  //get stream counts
+  VideoStreamCount:=MediaInfoVideoCount(FilePath);
+  AudioStreamCount:=MediaInfoAudioCount(FilePath);
+
+  //list video codecs at first followed by all used audio codecs
+  if OpenMediaFile(FilePath)=true then
+    begin
+      //list all video codecs
+      for Count:=0 to VideoStreamCount-1 do
+        result.Add(MediaInfo_Get(MediaFile, Stream_Video, Count, 'Format', 1, 0));
+      //list all audio codecs
+      for Count:=0 to AudioStreamCount-1 do
+        result.Add(MediaInfo_Get(MediaFile, Stream_Audio, Count, 'Format', 1, 0));
+    end;
+  except
+  result.clear;
+  end;
+end;
+
+function MediaInfoFileVideoCodecs(FilePath: String): TStrings;
+//Media file video codecs
+var
+  Count: Integer;
+  VideoStreamCount: Integer;
+
+begin
+  //empty list as default return value
+  result:=TStringList.Create;
+  result.Clear;
+
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+      exit;
+
+  try
+  //get stream counts
+  VideoStreamCount:=MediaInfoVideoCount(FilePath);
+
+  //list video codecs
+  if OpenMediaFile(FilePath)=true then
+    begin
+      //list all video codecs
+      for Count:=0 to VideoStreamCount-1 do
+        result.Add(MediaInfo_Get(MediaFile, Stream_Video, Count, 'Format', 1, 0));
+    end;
+  except
+  result.clear;
+  end;
+end;
+
+function MediaInfoFileAudioCodecs(FilePath: String): TStrings;
+//Media file audio codecs
+var
+  Count: Integer;
+  AudioStreamCount: Integer;
+
+begin
+  //empty list as default return value
+  result:=TStringList.Create;
+  result.Clear;
+
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+      exit;
+
+  try
+  //get stream counts
+  AudioStreamCount:=MediaInfoAudioCount(FilePath);
+
+  //list audio codecs
+  if OpenMediaFile(FilePath)=true then
+    begin
+      //list all audio codecs
+      for Count:=0 to AudioStreamCount-1 do
+        result.Add(MediaInfo_Get(MediaFile, Stream_Audio, Count, 'Format', 1, 0));
+    end;
+  except
+  result.clear;
+  end;
+end;
+
+function MediaInfoFileFirstVideoCodec(FilePath: String): String;
+//Media file first available video codec
+begin
+  result:='';
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+      exit;
+  try
+  //list first video codec
+  if OpenMediaFile(FilePath)=true then
+    result:=MediaInfo_Get(MediaFile, Stream_Video, 0, 'Format', 1, 0);
+  except
+  result:='';
+  end;
+end;
+
+function MediaInfoFileFirstAudioCodec(FilePath: String): String;
+//Media file first available audio codec
+begin
+  result:='';
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+      exit;
+  try
+  //list first audio codec
+  if OpenMediaFile(FilePath)=true then
+    result:=MediaInfo_Get(MediaFile, Stream_Audio, 0, 'Format', 1, 0);
+  except
+  result:='';
+  end;
+end;
+
+procedure LOADDLL;
+//Load DLL and initialize functions
 begin
   MediaInfo_DLL_OK:=false;
   try
-  //DLL laden und Funktionen initialisieren
   if (MediaInfo_DLLHandle=0) and (FileExists('MediaInfo.dll')=true) then
     begin
       MediaInfo_DLLHandle:=LoadLibrary('MediaInfo.dll');
@@ -469,7 +496,17 @@ begin
           //MediaInfoA_Count_Get
           MediaInfoA_Count_Get:=GetProcAddress(MediaInfo_DLLHandle,'MediaInfoA_Count_Get');
           if not Assigned(MediaInfoA_Count_Get) then Exit;
-          //alle DLL Funktion ohne Fehler geladen
+
+          //MediaInfoLib tries to connect to an Internet server for availability of newer software,
+          //anonymous statistics and retrieving information about a file (Later... To be done)
+          //If for some reasons you don't want this connection, deactivate it.
+          //http://mediaarea.net/en/MediaInfo/Support/SDK/Quick_Start#Init
+          MediaInfo_Option(MediaInfo_DLLHandle,'Internet','No');
+
+          //Handle
+          MediaFile:=MediaInfo_New;
+
+          //all DLL functions loaded without error
           MediaInfo_DLL_OK:=true;
         end;
     end;
@@ -478,14 +515,25 @@ begin
     end;
 end;
 
+procedure UNLOADDLL;
+//Free DLL
+begin
+if MediaInfo_DLLHandle<>0 then
+  begin
+    MediaInfo_Delete(MediaFile);
+    FreeLibrary(MediaInfo_DLLHandle);
+    MediaInfo_DLLHandle:=0;
+  end;
+end;
+
+initialization
+begin
+  LOADDLL;
+end;
+
 finalization
 begin
-  //DLL freigeben
-  if MediaInfo_DLLHandle<>0 then
-    begin
-      FreeLibrary(MediaInfo_DLLHandle);
-      MediaInfo_DLLHandle:=0;
-    end;
+  UNLOADDLL;
 end;
 
 end.
