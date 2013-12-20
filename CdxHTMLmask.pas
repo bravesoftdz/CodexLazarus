@@ -4,7 +4,7 @@ unit CdxHTMLmask;
 Unit Information:
 ------------------------------------------------------------------------
 Name:       CdxHTMLMask
-Version:    1.1
+Version:    1.2
 Purpose:    Mask special chars to HTML entities and vice versa
 Copyright:  Alexander Feuster
 Contact:    alexander.feuster@gmail.com

@@ -4,7 +4,7 @@ unit CdxStrUtils;
 Unit Information:
 ------------------------------------------------------------------------
 Name:       CdxStrUtils
-Version:    1.0
+Version:    1.1
 Purpose:    Set of additional String helper functions
 Copyright:  Alexander Feuster
 Contact:    alexander.feuster@gmail.com
@@ -25,7 +25,7 @@ Version History:
                     function SecondsToTimeString() moved from CdxUtils unit
                     function BinStrToHex()
                     function BinStrToInt()
-                    function TrimLeadingChar()
+1.1   20.12.2013    function TrimLeadingChar()
                     function TrimTrailingChar()
 
 }
