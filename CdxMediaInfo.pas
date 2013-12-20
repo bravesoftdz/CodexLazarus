@@ -35,6 +35,9 @@ Version History:
                       -> use SecondsToTimeString() from CdxStrUtils unit instead
                     function FileVideoWidth()
                     function FileVideoHeight()
+                    function StreamBitRateString()
+                    function VideoBitRateString()
+                    function AudioBitRateString()
 
 ------------------------------------------------------------------------
 Additional Technical Information:
@@ -104,6 +107,9 @@ type
   function FileFirstAudioCodec(FilePath: String): String;
   function VideoWidth(FilePath: String; const StreamNumber: Integer = 0): Integer;
   function VideoHeight(FilePath: String; const StreamNumber: Integer = 0): Integer;
+  function StreamBitRateString(FilePath: String; const StreamNumber: Integer = 0): String;
+  function VideoBitRateString(FilePath: String; const StreamNumber: Integer = 0): String;
+  function AudioBitRateString(FilePath: String; const StreamNumber: Integer = 0): String;
 
 var
   MediaFile: LongWord;
@@ -456,6 +462,54 @@ begin
     result:=StrToInt64Def(MediaInfo_Get(MediaFile, Stream_Video, StreamNumber, 'Height', 1, 0),0);
   except
   Result:=0;
+  end;
+end;
+
+function StreamBitRateString(FilePath: String; const StreamNumber: Integer = 0): String;
+//General stream bitrate
+begin
+  result:='';
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+    exit;
+  try
+  //read general stream bitrate
+  if OpenMediaFile(FilePath)=true then
+    result:=MediaInfo_Get(MediaFile, Stream_General, StreamNumber, 'BitRate/String', 1, 0);
+  except
+  result:='';
+  end;
+end;
+
+function VideoBitRateString(FilePath: String; const StreamNumber: Integer = 0): String;
+//Video stream bitrate
+begin
+  result:='';
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+    exit;
+  try
+  //read video stream bitrate
+  if OpenMediaFile(FilePath)=true then
+    result:=MediaInfo_Get(MediaFile, Stream_Video, StreamNumber, 'BitRate/String', 1, 0);
+  except
+  result:='';
+  end;
+end;
+
+function AudioBitRateString(FilePath: String; const StreamNumber: Integer = 0): String;
+//Audio stream bitrate
+begin
+  result:='';
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+    exit;
+  try
+  //read audio stream bitrate
+  if OpenMediaFile(FilePath)=true then
+    result:=MediaInfo_Get(MediaFile, Stream_Audio, StreamNumber, 'BitRate/String', 1, 0);
+  except
+  result:='';
   end;
 end;
 
