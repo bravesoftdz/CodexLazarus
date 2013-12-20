@@ -18,20 +18,23 @@ Version History:
 1.0   11.03.2008    Initial version written in D7
 1.1   18.12.2013    Rework as FPC/Lazarus version
 1.2   20.12.2013    again a complete rework based on older source
-                    function MediaInfoDLLVersion()
-                    function MediaInfoFileFormat()
-                    function MediaInfoFileSize()
-                    function MediaInfoFilePlayTime()
-                    function MediaInfoStreamCount()
-                    function MediaInfoVideoCount()
-                    function MediaInfoAudioCount()
-                    function MediaInfoFileCodecs()
-                    function MediaInfoFileVideoCodecs()
-                    function MediaInfoFileAudioCodecs()
-                    function MediaInfoFileFirstVideoCodec()
-                    function MediaInfoFileFirstAudioCodec()
+                    function DLLVersion()
+                    function FileFormat()
+                    function FileFormatInfo()
+                    function FileSize()
+                    function FilePlayTime()
+                    function StreamCount()
+                    function VideoCount()
+                    function AudioCount()
+                    function FileCodecs()
+                    function FileVideoCodecs()
+                    function FileAudioCodecs()
+                    function FileFirstVideoCodec()
+                    function FileFirstAudioCodec()
                     function MilliSecondsToString() removed
                       -> use SecondsToTimeString() from CdxStrUtils unit instead
+                    function FileVideoWidth()
+                    function FileVideoHeight()
 
 ------------------------------------------------------------------------
 Additional Technical Information:
@@ -57,7 +60,7 @@ http://mediaarea.net/en/MediaInfo   (english site)
 interface
 
 uses
-  SysUtils, Classes;
+  SysUtils, Classes, Windows;
 
 type
   {$warnings off}
@@ -85,18 +88,22 @@ type
 
   procedure LoadDLL;
   procedure UnloadDLL;
-  function MediaInfoDLLVersion: String;
-  function MediaInfoFileFormat(FilePath: String): String;
-  function MediaInfoFileSize(FilePath: String): Int64;
-  function MediaInfoFilePlayTime(FilePath: String): Int64;
-  function MediaInfoStreamCount(FilePath: String): Integer;
-  function MediaInfoVideoCount(FilePath: String): Integer;
-  function MediaInfoAudioCount(FilePath: String): Integer;
-  function MediaInfoFileCodecs(FilePath: String): TStrings;
-  function MediaInfoFileVideoCodecs(FilePath: String): TStrings;
-  function MediaInfoFileAudioCodecs(FilePath: String): TStrings;
-  function MediaInfoFileFirstVideoCodec(FilePath: String): String;
-  function MediaInfoFileFirstAudioCodec(FilePath: String): String;
+
+  function DLLVersion: String;
+  function FileFormat(FilePath: String): String;
+  function FileFormatInfo(FilePath: String): String;
+  function FileSize(FilePath: String): Int64;
+  function FilePlayTime(FilePath: String): Int64;
+  function StreamCount(FilePath: String): Integer;
+  function VideoCount(FilePath: String): Integer;
+  function AudioCount(FilePath: String): Integer;
+  function FileCodecs(FilePath: String): TStrings;
+  function FileVideoCodecs(FilePath: String): TStrings;
+  function FileAudioCodecs(FilePath: String): TStrings;
+  function FileFirstVideoCodec(FilePath: String): String;
+  function FileFirstAudioCodec(FilePath: String): String;
+  function VideoWidth(FilePath: String; const StreamNumber: Integer = 0): Integer;
+  function VideoHeight(FilePath: String; const StreamNumber: Integer = 0): Integer;
 
 var
   MediaFile: LongWord;
@@ -164,7 +171,7 @@ begin
     result:=false;
 end;
 
-function MediaInfoDLLVersion: String;
+function DLLVersion: String;
 //MediaInfo DLL version
 begin
   result:='';
@@ -178,7 +185,7 @@ begin
   end;
 end;
 
-function MediaInfoFileFormat(FilePath: String): String;
+function FileFormat(FilePath: String): String;
 //Media file general stream format
 begin
   result:='';
@@ -194,7 +201,23 @@ begin
   end;
 end;
 
-function MediaInfoFileSize(FilePath: String): Int64;
+function FileFormatInfo(FilePath: String): String;
+//Info about stream format
+begin
+  result:='';
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+    exit;
+  try
+  //read general stream format info
+  if OpenMediaFile(FilePath)=true then
+    result:=MediaInfo_Get(MediaFile, Stream_General, 0, 'Format/Info', 1, 0);
+  except
+  result:='';
+  end;
+end;
+
+function FileSize(FilePath: String): Int64;
 //Media filesize
 begin
   Result:=0;
@@ -210,7 +233,7 @@ begin
   end;
 end;
 
-function MediaInfoFilePlayTime(FilePath: String): Int64;
+function FilePlayTime(FilePath: String): Int64;
 //Media file duration
 begin
   Result:=0;
@@ -226,7 +249,7 @@ begin
   end;
 end;
 
-function MediaInfoStreamCount(FilePath: String): Integer;
+function StreamCount(FilePath: String): Integer;
 //Media file stream count
 begin
   Result:=0;
@@ -242,7 +265,7 @@ begin
   end;
 end;
 
-function MediaInfoVideoCount(FilePath: String): Integer;
+function VideoCount(FilePath: String): Integer;
 //Media file video stream count
 begin
   Result:=0;
@@ -258,7 +281,7 @@ begin
   end;
 end;
 
-function MediaInfoAudioCount(FilePath: String): Integer;
+function AudioCount(FilePath: String): Integer;
 //Media file audio stream count
 begin
   Result:=0;
@@ -274,7 +297,7 @@ begin
   end;
 end;
 
-function MediaInfoFileCodecs(FilePath: String): TStrings;
+function FileCodecs(FilePath: String): TStrings;
 //Media file codecs
 var
   Count: Integer;
@@ -292,8 +315,8 @@ begin
 
   try
   //get stream counts
-  VideoStreamCount:=MediaInfoVideoCount(FilePath);
-  AudioStreamCount:=MediaInfoAudioCount(FilePath);
+  VideoStreamCount:=VideoCount(FilePath);
+  AudioStreamCount:=AudioCount(FilePath);
 
   //list video codecs at first followed by all used audio codecs
   if OpenMediaFile(FilePath)=true then
@@ -310,7 +333,7 @@ begin
   end;
 end;
 
-function MediaInfoFileVideoCodecs(FilePath: String): TStrings;
+function FileVideoCodecs(FilePath: String): TStrings;
 //Media file video codecs
 var
   Count: Integer;
@@ -327,7 +350,7 @@ begin
 
   try
   //get video stream count
-  VideoStreamCount:=MediaInfoVideoCount(FilePath);
+  VideoStreamCount:=VideoCount(FilePath);
 
   //list video codecs
   if OpenMediaFile(FilePath)=true then
@@ -341,7 +364,7 @@ begin
   end;
 end;
 
-function MediaInfoFileAudioCodecs(FilePath: String): TStrings;
+function FileAudioCodecs(FilePath: String): TStrings;
 //Media file audio codecs
 var
   Count: Integer;
@@ -358,7 +381,7 @@ begin
 
   try
   //get audio stream count
-  AudioStreamCount:=MediaInfoAudioCount(FilePath);
+  AudioStreamCount:=AudioCount(FilePath);
 
   //list audio codecs
   if OpenMediaFile(FilePath)=true then
@@ -372,7 +395,7 @@ begin
   end;
 end;
 
-function MediaInfoFileFirstVideoCodec(FilePath: String): String;
+function FileFirstVideoCodec(FilePath: String): String;
 //Media file first available video codec
 begin
   result:='';
@@ -388,7 +411,7 @@ begin
   end;
 end;
 
-function MediaInfoFileFirstAudioCodec(FilePath: String): String;
+function FileFirstAudioCodec(FilePath: String): String;
 //Media file first available audio codec
 begin
   result:='';
@@ -401,6 +424,38 @@ begin
     result:=MediaInfo_Get(MediaFile, Stream_Audio, 0, 'Format', 1, 0);
   except
   result:='';
+  end;
+end;
+
+function VideoWidth(FilePath: String; const StreamNumber: Integer = 0): Integer;
+//Media file video width
+begin
+  Result:=0;
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+    exit;
+  try
+  //read video width from file
+  if OpenMediaFile(FilePath)=true then
+    result:=StrToInt64Def(MediaInfo_Get(MediaFile, Stream_Video, StreamNumber, 'Width', 1, 0),0);
+  except
+  Result:=0;
+  end;
+end;
+
+function VideoHeight(FilePath: String; const StreamNumber: Integer = 0): Integer;
+//Media file video height
+begin
+  Result:=0;
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+    exit;
+  try
+  //read video width from file
+  if OpenMediaFile(FilePath)=true then
+    result:=StrToInt64Def(MediaInfo_Get(MediaFile, Stream_Video, StreamNumber, 'Height', 1, 0),0);
+  except
+  Result:=0;
   end;
 end;
 
