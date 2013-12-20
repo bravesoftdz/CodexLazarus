@@ -25,6 +25,8 @@ Version History:
                     function SecondsToTimeString() moved from CdxUtils unit
                     function BinStrToHex()
                     function BinStrToInt()
+                    function TrimLeadingChar()
+                    function TrimTrailingChar()
 
 }
 {$mode objfpc}{$H+}
@@ -38,11 +40,13 @@ function BinStrToHex(BinString: String): String;
 function BinStrToInt(BinString: String): Integer;
 function HexToBinStr(HexString: String): String;
 function IntToBinStr(Value: Integer): String;
-function UnicodeStringReplace(const S, OldPattern, NewPattern: UnicodeString;  Flags: TReplaceFlags): UnicodeString;
-function UTF8Chr(Unicode: Cardinal): UTF8String;
 function SecondsToTimeString(Seconds: Integer; SecondsAsMilliseconds: Boolean = false): String;
 function Split(Delimiter: Char; Text: String): TStrings;
 function SubnetFromIPv4(IP: String): String;
+function TrimLeadingChar(Text: String; LeadChar: Char): String;
+function TrimTrailingChar(Text: String; TrailChar: Char): String;
+function UnicodeStringReplace(const S, OldPattern, NewPattern: UnicodeString;  Flags: TReplaceFlags): UnicodeString;
+function UTF8Chr(Unicode: Cardinal): UTF8String;
 
 
 implementation
@@ -57,7 +61,6 @@ function BinStrToInt(BinString: String): Integer;
 //Converts a binary String back to an Integer
 var
   Index: Integer;
-  Int: Integer;
 
 begin
   Result:=0;
@@ -82,13 +85,13 @@ var
   Index: Integer;
 
 begin
-  //remove trailing $ in case of
+  //remove leading $ in case of
   if LeftStr(HexString,1)='$' then
     HexString:=RightStr(HexString, Length(HexString)-1);
-  //remove trailing # in case of
+  //remove leading # in case of
   if LeftStr(HexString,1)='#' then
     HexString:=RightStr(HexString, Length(HexString)-1);
-  //remove trailing 0x in case of
+  //remove leading 0x in case of
   if LeftStr(HexString,2)='0x' then
     HexString:=RightStr(HexString, Length(HexString)-2);
 
@@ -97,23 +100,110 @@ begin
   for Index:=Length(HexString) DownTo 1 do //start String creation with MSB (Most Significat Bit = most left Bit)
     Result:=HexBits[StrToInt('$'+HexString[Index])]+Result;
 
-  //remove trailing Zero´s
-  Index:=0;
-  while Index<Length(result) do
-    begin
-      if result[Index]='1' then
-        begin
-          result:=RightStr(result,Length(result)-Index+1);
-          break;
-        end;
-      inc(Index);
-    end;
+  //remove leading Zero´s
+  result:=TrimLeadingChar(result,'0');
 end;
 
 function IntToBinStr(Value: Integer): String;
 //Converts a decimal String to a binary String
 begin
   result:=HexToBinStr(IntToHex(Value,1));
+end;
+
+function SecondsToTimeString(Seconds: Integer; SecondsAsMilliseconds: Boolean = false): String;
+//Converts (milli)seconds numerical value to a time string with format "xx:xx:xx"
+var
+  Hours, Minutes: Integer;
+
+begin
+  try
+    //Convert milliseconds to seconds
+    if SecondsAsMilliseconds=true then
+      Seconds:=round(Seconds/1000);
+    //do not allow more seconds than the maximum value of "99:59:59"
+    if Seconds>359999 then
+      Seconds:=359999;
+    //do string conversion
+    Hours:=(Seconds div 3600);
+    Seconds:=Seconds-(Hours*3600);
+    Minutes:=(Seconds div 60);
+    Seconds:=Seconds-(Minutes*60);
+    result:= FormatFloat('00', Hours)+':'+FormatFloat('00', Minutes)+':'+FormatFloat('00', Seconds);
+  except
+    //default fallback result
+    result:='00:00:00';
+  end;
+end;
+
+function Split(Delimiter: Char; Text: String): TStrings;
+//Simple String Split function
+var
+  TextParts: TStringList;
+
+begin
+  TextParts:=TStringList.Create;
+  TextParts.Clear;
+  TextParts.StrictDelimiter:=true;
+  TextParts.Delimiter:=Delimiter;
+  TextParts.DelimitedText:=Text;
+  result:=TextParts;
+end;
+
+function SubnetFromIPv4(IP: String): String;
+//extract Subnet from a given IPv4 String
+begin
+  if AnsiPos('.',IP)=0 then
+    Result:=''
+  else
+    Result:=AnsiLeftStr(IP,LastDelimiter('.',IP));
+end;
+
+function TrimLeadingChar(Text: String; LeadChar: Char): String;
+//Removes all leading chars of the same kind from a String
+var
+  Index: Integer;
+
+begin
+  result:=Text;
+  //check if leading char is given
+  if LeadChar='' then
+    exit;
+
+  //remove leading char until actual leading char is different
+  //but leave at least one char as result also if it is the
+  //leading char
+  Index:=1;
+  while Index<Length(result) do
+    begin
+      if result[Index]<>LeadChar then
+        break;
+      inc(Index);
+    end;
+  result:=RightStr(result,Length(result)-Index+1);
+end;
+
+function TrimTrailingChar(Text: String; TrailChar: Char): String;
+//Removes all trailing chars of the same kind from a String
+var
+  Index: Integer;
+
+begin
+  result:=Text;
+  //check if trailing char is given
+  if TrailChar='' then
+    exit;
+
+  //remove trailing char until actual trailing char is different
+  //but leave at least one char as result also if it is the
+  //trailing char
+  Index:=Length(result);
+  while Index>1 do
+    begin
+      if result[Index]<>String(TrailChar) then
+        break;
+      dec(Index);
+    end;
+  result:=LeftStr(result,Index);
 end;
 
 function UnicodeStringReplace(const S, OldPattern, NewPattern: UnicodeString;  Flags: TReplaceFlags): UnicodeString;
@@ -167,54 +257,6 @@ begin
   //do conversion
   UTF8Char:=WideChar(Unicode);
   result:=Utf8Encode(UTF8Char);
-end;
-
-function SecondsToTimeString(Seconds: Integer; SecondsAsMilliseconds: Boolean = false): String;
-//Converts (milli)seconds numerical value to a time string with format "xx:xx:xx"
-var
-  Hours, Minutes: Integer;
-
-begin
-  try
-    //Convert milliseconds to seconds
-    if SecondsAsMilliseconds=true then
-      Seconds:=round(Seconds/1000);
-    //do not allow more seconds than the maximum value of "99:59:59"
-    if Seconds>359999 then
-      Seconds:=359999;
-    //do string conversion
-    Hours:=(Seconds div 3600);
-    Seconds:=Seconds-(Hours*3600);
-    Minutes:=(Seconds div 60);
-    Seconds:=Seconds-(Minutes*60);
-    result:= FormatFloat('00', Hours)+':'+FormatFloat('00', Minutes)+':'+FormatFloat('00', Seconds);
-  except
-    //default fallback result
-    result:='00:00:00';
-  end;
-end;
-
-function Split(Delimiter: Char; Text: String): TStrings;
-//Simple String Split function
-var
-  TextParts: TStringList;
-
-begin
-  TextParts:=TStringList.Create;
-  TextParts.Clear;
-  TextParts.StrictDelimiter:=true;
-  TextParts.Delimiter:=Delimiter;
-  TextParts.DelimitedText:=Text;
-  result:=TextParts;
-end;
-
-function SubnetFromIPv4(IP: String): String;
-//extract Subnet from a given IPv4 String
-begin
-  if AnsiPos('.',IP)=0 then
-    Result:=''
-  else
-    Result:=AnsiLeftStr(IP,LastDelimiter('.',IP));
 end;
 
 end.
