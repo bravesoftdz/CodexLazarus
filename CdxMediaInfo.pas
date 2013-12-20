@@ -30,7 +30,8 @@ Version History:
                     function MediaInfoFileAudioCodecs()
                     function MediaInfoFileFirstVideoCodec()
                     function MediaInfoFileFirstAudioCodec()
-
+                    function MilliSecondsToString() removed
+                      -> use SecondsToTimeString() from CdxStrUtils unit instead
 
 ------------------------------------------------------------------------
 Additional Technical Information:
@@ -56,7 +57,7 @@ http://mediaarea.net/en/MediaInfo   (english site)
 interface
 
 uses
-  Windows, SysUtils, Classes, LazUTF8;
+  SysUtils, Classes;
 
 type
   {$warnings off}
@@ -82,10 +83,8 @@ type
   TMediaInfoA_Count_Get=function (Handle: Cardinal; StreamKind: Integer; StreamNumber: Integer): Integer cdecl stdcall;
   {$warnings on}
 
-  procedure LOADDLL;
-  procedure UNLOADDLL;
-  function MilliSecondsToString(MilliSeconds: Int64): String;
-
+  procedure LoadDLL;
+  procedure UnloadDLL;
   function MediaInfoDLLVersion: String;
   function MediaInfoFileFormat(FilePath: String): String;
   function MediaInfoFileSize(FilePath: String): Int64;
@@ -103,7 +102,6 @@ var
   MediaFile: LongWord;
   PMediaFile: PWideChar;
   StreamKind: Integer;
-
   MediaInfo_DLLHandle: THandle = 0;
   MediaInfo_DLL_OK: Boolean;
   MediaInfo_New: TMediaInfo_New;
@@ -127,7 +125,7 @@ var
   MediaInfoA_State_Get: TMediaInfoA_State_Get;
   MediaInfoA_Count_Get: TMediaInfoA_Count_Get;
 
-Const
+const
   Stream_General: Cardinal = 0;
   Stream_Video: Cardinal = 1;
   Stream_Audio: Cardinal = 2;
@@ -156,7 +154,7 @@ Const
 implementation
 
 function OpenMediaFile(FilePath: String): Boolean;
-//open the file which shall be examined
+//Open the file which shall be examined
 begin
   GetMem(PMediaFile, 512);
   PMediaFile:=StringToWideChar(FilePath, PMediaFile, 256);
@@ -166,28 +164,8 @@ begin
     result:=false;
 end;
 
-function MilliSecondsToString(MilliSeconds: Int64): String;
-//Milliseconds to String
-var
-  Hours: Integer;
-  Minutes: Integer;
-  Seconds: Integer;
-
-begin
-  try
-    Seconds:=MilliSeconds div 1000;
-    Hours:=(Seconds div 3600);
-    Seconds:=Seconds-(Hours*3600);
-    Minutes:=(Seconds div 60);
-    Seconds:=Seconds-(Minutes*60);
-    MilliSecondsToString:= FormatFloat('00', Hours)+':'+FormatFloat('00', Minutes)+':'+FormatFloat('00', Seconds);
-  except
-    MilliSecondsToString:= '00:00:00';
-  end;
-end;
-
 function MediaInfoDLLVersion: String;
-//MediaInfo DLL Version
+//MediaInfo DLL version
 begin
   result:='';
   //check if DLL is loaded
@@ -348,7 +326,7 @@ begin
       exit;
 
   try
-  //get stream counts
+  //get video stream count
   VideoStreamCount:=MediaInfoVideoCount(FilePath);
 
   //list video codecs
@@ -379,7 +357,7 @@ begin
       exit;
 
   try
-  //get stream counts
+  //get audio stream count
   AudioStreamCount:=MediaInfoAudioCount(FilePath);
 
   //list audio codecs
@@ -426,7 +404,7 @@ begin
   end;
 end;
 
-procedure LOADDLL;
+procedure LoadDLL;
 //Load DLL and initialize functions
 begin
   MediaInfo_DLL_OK:=false;
@@ -496,16 +474,13 @@ begin
           //MediaInfoA_Count_Get
           MediaInfoA_Count_Get:=GetProcAddress(MediaInfo_DLLHandle,'MediaInfoA_Count_Get');
           if not Assigned(MediaInfoA_Count_Get) then Exit;
-
           //MediaInfoLib tries to connect to an Internet server for availability of newer software,
           //anonymous statistics and retrieving information about a file (Later... To be done)
           //If for some reasons you don't want this connection, deactivate it.
           //http://mediaarea.net/en/MediaInfo/Support/SDK/Quick_Start#Init
           MediaInfo_Option(MediaInfo_DLLHandle,'Internet','No');
-
           //Handle
           MediaFile:=MediaInfo_New;
-
           //all DLL functions loaded without error
           MediaInfo_DLL_OK:=true;
         end;
@@ -515,7 +490,7 @@ begin
     end;
 end;
 
-procedure UNLOADDLL;
+procedure UnloadDLL;
 //Free DLL
 begin
 if MediaInfo_DLLHandle<>0 then
@@ -527,13 +502,17 @@ if MediaInfo_DLLHandle<>0 then
 end;
 
 initialization
+//Unit initalization
 begin
-  LOADDLL;
+  //initialize DLL with unit
+  LoadDLL;
 end;
 
 finalization
+//Unit finalization
 begin
-  UNLOADDLL;
+  //Unload and free DLL
+  UnloadDLL;
 end;
 
 end.
