@@ -27,6 +27,7 @@ Version History:
                     function BinStrToInt()
 1.1   20.12.2013    function TrimLeadingChar()
                     function TrimTrailingChar()
+                    function SecondsToTimeString() automatic assume of milliseconds if overflow
 
 }
 {$mode objfpc}{$H+}
@@ -119,6 +120,9 @@ begin
   try
     //Convert milliseconds to seconds
     if SecondsAsMilliseconds=true then
+      Seconds:=round(Seconds/1000);
+    //if more seconds than the maximum value of "99:59:59" assume milliseconds
+    if Seconds>359999 then
       Seconds:=round(Seconds/1000);
     //do not allow more seconds than the maximum value of "99:59:59"
     if Seconds>359999 then
