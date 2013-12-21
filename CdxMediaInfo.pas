@@ -47,6 +47,7 @@ Version History:
                     function PictureHeight()
                     function MIMEType()
                     function DLLSupportedCodecs()
+                    function MediaInfoGet()
 
 ------------------------------------------------------------------------
 Additional Technical Information:
@@ -99,7 +100,6 @@ type
 
   procedure LoadDLL;
   procedure UnloadDLL;
-
   function DLLVersion: String;
   function DLLSupportedCodecs: String;
   function FileFormat(FilePath: String): String;
@@ -127,59 +127,59 @@ type
   function PictureWidth(FilePath: String): Integer;
   function PictureHeight(FilePath: String): Integer;
   function MIMEType(FilePath: String): String;
+  function MediaInfoGet(FilePath: String; Parameter: String; const StreamKind: Cardinal = 0): String;
 
-var
-  MediaFile: LongWord;
-  PMediaFile: PWideChar;
-  StreamKind: Integer;
-  MediaInfo_DLLHandle: THandle = 0;
-  MediaInfo_DLL_OK: Boolean;
-  MediaInfo_New: TMediaInfo_New;
-  MediaInfo_Delete: TMediaInfo_Delete;
-  MediaInfo_Open: TMediaInfo_Open;
-  MediaInfo_Close: TMediaInfo_Close;
-  MediaInfo_Inform: TMediaInfo_Inform;
-  MediaInfo_GetI: TMediaInfo_GetI;
-  MediaInfo_Get: TMediaInfo_Get;
-  MediaInfo_Option: TMediaInfo_Option;
-  MediaInfo_State_Get: TMediaInfo_State_Get;
-  MediaInfo_Count_Get: TMediaInfo_Count_Get;
-  MediaInfoA_New: TMediaInfoA_New;
-  MediaInfoA_Delete: TMediaInfoA_Delete;
-  MediaInfoA_Open: TMediaInfoA_Open;
-  MediaInfoA_Close: TMediaInfoA_Close;
-  MediaInfoA_Inform: TMediaInfoA_Inform;
-  MediaInfoA_GetI: TMediaInfoA_GetI;
-  MediaInfoA_Get: TMediaInfoA_Get;
-  MediaInfoA_Option: TMediaInfoA_Option;
-  MediaInfoA_State_Get: TMediaInfoA_State_Get;
-  MediaInfoA_Count_Get: TMediaInfoA_Count_Get;
+  var
+    MediaFile: LongWord;
+    PMediaFile: PWideChar;
+    StreamKind: Integer;
+    MediaInfo_DLLHandle: THandle = 0;
+    MediaInfo_DLL_OK: Boolean;
+    MediaInfo_New: TMediaInfo_New;
+    MediaInfo_Delete: TMediaInfo_Delete;
+    MediaInfo_Open: TMediaInfo_Open;
+    MediaInfo_Close: TMediaInfo_Close;
+    MediaInfo_Inform: TMediaInfo_Inform;
+    MediaInfo_GetI: TMediaInfo_GetI;
+    MediaInfo_Get: TMediaInfo_Get;
+    MediaInfo_Option: TMediaInfo_Option;
+    MediaInfo_State_Get: TMediaInfo_State_Get;
+    MediaInfo_Count_Get: TMediaInfo_Count_Get;
+    MediaInfoA_New: TMediaInfoA_New;
+    MediaInfoA_Delete: TMediaInfoA_Delete;
+    MediaInfoA_Open: TMediaInfoA_Open;
+    MediaInfoA_Close: TMediaInfoA_Close;
+    MediaInfoA_Inform: TMediaInfoA_Inform;
+    MediaInfoA_GetI: TMediaInfoA_GetI;
+    MediaInfoA_Get: TMediaInfoA_Get;
+    MediaInfoA_Option: TMediaInfoA_Option;
+    MediaInfoA_State_Get: TMediaInfoA_State_Get;
+    MediaInfoA_Count_Get: TMediaInfoA_Count_Get;
 
-const
-  Stream_General:   Cardinal = 0;
-  Stream_Video:     Cardinal = 1;
-  Stream_Audio:     Cardinal = 2;
-  Stream_Text:      Cardinal = 3;
-  Stream_Other:     Cardinal = 4;
-  Stream_Image:     Cardinal = 5;
-  Stream_Menu:      Cardinal = 6;
-  Stream_Max:       Cardinal = 7;
-  Info_Name:        Cardinal = 0;
-  Info_Text:        Cardinal = 1;
-  Info_Measure:     Cardinal = 2;
-  Info_Options:     Cardinal = 3;
-  Info_Name_Text:   Cardinal = 4;
-  Info_Measure_Text:Cardinal = 5;
-  Info_Info:        Cardinal = 6;
-  Info_HowTo:       Cardinal = 7;
-  Info_Max:         Cardinal = 8;
-  InfoOption_ShowInInform:    Cardinal = 0;
-  InfoOption_Reserved:        Cardinal = 1;
-  InfoOption_ShowInSupported: Cardinal = 2;
-  InfoOption_TypeOfValue:     Cardinal = 3;
-  InfoOption_Max:             Cardinal = 4;
-  InformOption_Nothing:       Cardinal = 0;
-
+  const
+    Stream_General:   Cardinal = 0;
+    Stream_Video:     Cardinal = 1;
+    Stream_Audio:     Cardinal = 2;
+    Stream_Text:      Cardinal = 3;
+    Stream_Other:     Cardinal = 4;
+    Stream_Image:     Cardinal = 5;
+    Stream_Menu:      Cardinal = 6;
+    Stream_Max:       Cardinal = 7;
+    Info_Name:        Cardinal = 0;
+    Info_Text:        Cardinal = 1;
+    Info_Measure:     Cardinal = 2;
+    Info_Options:     Cardinal = 3;
+    Info_Name_Text:   Cardinal = 4;
+    Info_Measure_Text:Cardinal = 5;
+    Info_Info:        Cardinal = 6;
+    Info_HowTo:       Cardinal = 7;
+    Info_Max:         Cardinal = 8;
+    InfoOption_ShowInInform:    Cardinal = 0;
+    InfoOption_Reserved:        Cardinal = 1;
+    InfoOption_ShowInSupported: Cardinal = 2;
+    InfoOption_TypeOfValue:     Cardinal = 3;
+    InfoOption_Max:             Cardinal = 4;
+    InformOption_Nothing:       Cardinal = 0;
 
 implementation
 
@@ -192,6 +192,27 @@ begin
     result:=true
   else
     result:=false;
+end;
+
+function MediaInfoGet(FilePath: String; Parameter: String; const StreamKind: Cardinal = 0): String;
+//General MediaInfo_Get() wrapper
+var
+  PParameter: PWideChar;
+
+begin
+  result:='';
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+      exit;
+  try
+  //get parameter
+  GetMem(PParameter, 512);
+  PParameter:=StringToWideChar(Parameter, PParameter, 256);
+  if OpenMediaFile(FilePath)=true then
+    result:=MediaInfo_Get(MediaFile, StreamKind, 0, PParameter, 1, 0);
+  except
+  result:='';
+  end;
 end;
 
 function DLLVersion: String;
