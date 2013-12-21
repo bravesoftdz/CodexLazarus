@@ -4,7 +4,7 @@ unit CdxStrUtils;
 Unit Information:
 ------------------------------------------------------------------------
 Name:       CdxStrUtils
-Version:    1.1
+Version:    1.2
 Purpose:    Set of additional String helper functions
 Copyright:  Alexander Feuster
 Contact:    alexander.feuster@gmail.com
@@ -28,6 +28,8 @@ Version History:
 1.1   20.12.2013    function TrimLeadingChar()
                     function TrimTrailingChar()
                     function SecondsToTimeString() automatic assume of milliseconds if overflow
+1.2  20.12.2013     Trim of leading Zero´s in HexToBinStr() now optional
+                    Trim of leading Zero´s in IntToBinStr() now optional
 
 }
 {$mode objfpc}{$H+}
@@ -39,8 +41,8 @@ uses
 
 function BinStrToHex(BinString: String): String;
 function BinStrToInt(BinString: String): Integer;
-function HexToBinStr(HexString: String): String;
-function IntToBinStr(Value: Integer): String;
+function HexToBinStr(HexString: String; const Trim: Boolean = true): String;
+function IntToBinStr(Value: Integer; const Trim: Boolean = true): String;
 function SecondsToTimeString(Seconds: Integer; SecondsAsMilliseconds: Boolean = false): String;
 function Split(Delimiter: Char; Text: String): TStrings;
 function SubnetFromIPv4(IP: String): String;
@@ -72,7 +74,7 @@ begin
     end;
 end;
 
-function HexToBinStr(HexString: String): String;
+function HexToBinStr(HexString: String; const Trim: Boolean = true): String;
 //Converts a hexadecimal String to a binary String
 const
   //String array for the binary value Bits from 0 to 15
@@ -102,13 +104,14 @@ begin
     Result:=HexBits[StrToInt('$'+HexString[Index])]+Result;
 
   //remove leading Zero´s
-  result:=TrimLeadingChar(result,'0');
+  if Trim=true then
+    result:=TrimLeadingChar(result,'0');
 end;
 
-function IntToBinStr(Value: Integer): String;
+function IntToBinStr(Value: Integer; const Trim: Boolean = true): String;
 //Converts a decimal String to a binary String
 begin
-  result:=HexToBinStr(IntToHex(Value,1));
+  result:=HexToBinStr(IntToHex(Value,1), Trim);
 end;
 
 function SecondsToTimeString(Seconds: Integer; SecondsAsMilliseconds: Boolean = false): String;
