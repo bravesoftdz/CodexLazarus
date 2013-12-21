@@ -4,7 +4,7 @@ unit CdxMediaInfo;
 Unit Information:
 ------------------------------------------------------------------------
 Name:       CdxMediaInfo
-Version:    1.2
+Version:    1.3
 Purpose:    Header for dynamic loading of functions from the MediaInfo DLL
 Copyright:  Alexander Feuster
 Contact:    alexander.feuster@gmail.com
@@ -42,11 +42,15 @@ Version History:
                     function PixelAspectRatioString()
                     function VideoFrameRate()
                     function AudioSamplingRateString()
+1.3   21.12.2013    function PictureFormat()
+                    function PictureWidth()
+                    function PictureHeight()
+                    function MIMEType()
+                    function DLLSupportedCodecs()
 
 ------------------------------------------------------------------------
 Additional Technical Information:
 ------------------------------------------------------------------------
-
 MediaInfo is a convenient unified display of the most relevant technical
 and tag data for video and audio files. The "MediaInfo.dll" is the
 library DLL of this project.
@@ -97,6 +101,7 @@ type
   procedure UnloadDLL;
 
   function DLLVersion: String;
+  function DLLSupportedCodecs: String;
   function FileFormat(FilePath: String): String;
   function FileFormatInfo(FilePath: String): String;
   function FileSize(FilePath: String): Int64;
@@ -118,6 +123,10 @@ type
   function PixelAspectRatioString(FilePath: String; const StreamNumber: Integer = 0): String;
   function VideoFrameRate(FilePath: String; const StreamNumber: Integer = 0): String;
   function AudioSamplingRateString(FilePath: String; const StreamNumber: Integer = 0): String;
+  function PictureFormat(FilePath: String): String;
+  function PictureWidth(FilePath: String): Integer;
+  function PictureHeight(FilePath: String): Integer;
+  function MIMEType(FilePath: String): String;
 
 var
   MediaFile: LongWord;
@@ -147,29 +156,29 @@ var
   MediaInfoA_Count_Get: TMediaInfoA_Count_Get;
 
 const
-  Stream_General: Cardinal = 0;
-  Stream_Video: Cardinal = 1;
-  Stream_Audio: Cardinal = 2;
-  Stream_Text: Cardinal = 3;
-  Stream_Other: Cardinal = 4;
-  Stream_Image: Cardinal = 5;
-  Stream_Menu: Cardinal = 6;
-  Stream_Max: Cardinal = 7;
-  Info_Name: Cardinal = 0;
-  Info_Text: Cardinal = 1;
-  Info_Measure: Cardinal = 2;
-  Info_Options: Cardinal = 3;
-  Info_Name_Text: Cardinal = 4;
-  Info_Measure_Text: Cardinal = 5;
-  Info_Info: Cardinal = 6;
-  Info_HowTo: Cardinal = 7;
-  Info_Max: Cardinal = 8;
-  InfoOption_ShowInInform: Cardinal = 0;
-  InfoOption_Reserved: Cardinal = 1;
+  Stream_General:   Cardinal = 0;
+  Stream_Video:     Cardinal = 1;
+  Stream_Audio:     Cardinal = 2;
+  Stream_Text:      Cardinal = 3;
+  Stream_Other:     Cardinal = 4;
+  Stream_Image:     Cardinal = 5;
+  Stream_Menu:      Cardinal = 6;
+  Stream_Max:       Cardinal = 7;
+  Info_Name:        Cardinal = 0;
+  Info_Text:        Cardinal = 1;
+  Info_Measure:     Cardinal = 2;
+  Info_Options:     Cardinal = 3;
+  Info_Name_Text:   Cardinal = 4;
+  Info_Measure_Text:Cardinal = 5;
+  Info_Info:        Cardinal = 6;
+  Info_HowTo:       Cardinal = 7;
+  Info_Max:         Cardinal = 8;
+  InfoOption_ShowInInform:    Cardinal = 0;
+  InfoOption_Reserved:        Cardinal = 1;
   InfoOption_ShowInSupported: Cardinal = 2;
-  InfoOption_TypeOfValue: Cardinal = 3;
-  InfoOption_Max: Cardinal = 4;
-  InformOption_Nothing: Cardinal = 0;
+  InfoOption_TypeOfValue:     Cardinal = 3;
+  InfoOption_Max:             Cardinal = 4;
+  InformOption_Nothing:       Cardinal = 0;
 
 
 implementation
@@ -194,6 +203,20 @@ begin
     exit;
   try
   result:=MediaInfo_Option(0, 'Info_Version', '');
+  except
+  result:='';
+  end;
+end;
+
+function DLLSupportedCodecs: String;
+//MediaInfo DLL supported codecs
+begin
+  result:='';
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+    exit;
+  try
+  result:=MediaInfo_Option(0, 'Info_Codecs', '');
   except
   result:='';
   end;
@@ -580,6 +603,70 @@ begin
   //read audio stream sampling rate
   if OpenMediaFile(FilePath)=true then
     result:=MediaInfo_Get(MediaFile, Stream_Audio, StreamNumber, 'SamplingRate/String', 1, 0);
+  except
+  result:='';
+  end;
+end;
+
+function PictureFormat(FilePath: String): String;
+//Picture file format
+begin
+  result:='';
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+    exit;
+  try
+  //read picture file format
+  if OpenMediaFile(FilePath)=true then
+    result:=MediaInfo_Get(MediaFile, Stream_General, 0, 'Format', 1, 0);
+  except
+  result:='';
+  end;
+end;
+
+function PictureWidth(FilePath: String): Integer;
+//Picture width
+begin
+  Result:=0;
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+    exit;
+  try
+  //read picture width from file
+  if OpenMediaFile(FilePath)=true then
+    result:=StrToInt64Def(MediaInfo_Get(MediaFile, Stream_Image, 0, 'Width', 1, 0),0);
+  except
+  Result:=0;
+  end;
+end;
+
+function PictureHeight(FilePath: String): Integer;
+//Picture height
+begin
+  Result:=0;
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+    exit;
+  try
+  //read picture height from file
+  if OpenMediaFile(FilePath)=true then
+    result:=StrToInt64Def(MediaInfo_Get(MediaFile, Stream_Image, 0, 'Height', 1, 0),0);
+  except
+  Result:=0;
+  end;
+end;
+
+function MIMEType(FilePath: String): String;
+//File MIME type
+begin
+  result:='';
+  //check if DLL is loaded
+  if MediaInfo_DLL_OK=false then
+    exit;
+  try
+  //read file MIME type
+  if OpenMediaFile(FilePath)=true then
+    result:=MediaInfo_Get(MediaFile, Stream_General, 0, 'InternetMediaType', 1, 0);
   except
   result:='';
   end;
