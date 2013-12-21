@@ -48,6 +48,10 @@ Version History:
                     function MIMEType()
                     function DLLSupportedCodecs()
                     function MediaInfoGet()
+                    function MediaInfoGetInt()
+                    function MediaInfoGetInt64()
+                    all functions cleaned up
+
 
 ------------------------------------------------------------------------
 Additional Technical Information:
@@ -127,7 +131,9 @@ type
   function PictureWidth(FilePath: String): Integer;
   function PictureHeight(FilePath: String): Integer;
   function MIMEType(FilePath: String): String;
-  function MediaInfoGet(FilePath: String; Parameter: String; const StreamKind: Cardinal = 0): String;
+  function MediaInfoGet(FilePath: String; StreamKind: Integer; StreamNumber: Integer; Parameter: String): String;
+  function MediaInfoGetInt(FilePath: String; StreamKind: Integer; StreamNumber: Integer; Parameter: String): Integer;
+  function MediaInfoGetInt64(FilePath: String; StreamKind: Integer; StreamNumber: Integer; Parameter: String): Int64;
 
   var
     MediaFile: LongWord;
@@ -194,7 +200,7 @@ begin
     result:=false;
 end;
 
-function MediaInfoGet(FilePath: String; Parameter: String; const StreamKind: Cardinal = 0): String;
+function MediaInfoGet(FilePath: String; StreamKind: Integer; StreamNumber: Integer; Parameter: String): String;
 //General MediaInfo_Get() wrapper
 var
   PParameter: PWideChar;
@@ -209,10 +215,22 @@ begin
   GetMem(PParameter, 512);
   PParameter:=StringToWideChar(Parameter, PParameter, 256);
   if OpenMediaFile(FilePath)=true then
-    result:=MediaInfo_Get(MediaFile, StreamKind, 0, PParameter, 1, 0);
+    result:=MediaInfo_Get(MediaFile, StreamKind, StreamNumber, PParameter, 1, 0);
   except
   result:='';
   end;
+end;
+
+function MediaInfoGetInt(FilePath: String; StreamKind: Integer; StreamNumber: Integer; Parameter: String): Integer;
+//General MediaInfo_Get() wrapper
+begin
+  result:=StrToIntDef(MediaInfoGet(FilePath, StreamKind, StreamNumber, Parameter),0);
+end;
+
+function MediaInfoGetInt64(FilePath: String; StreamKind: Integer; StreamNumber: Integer; Parameter: String): Int64;
+//General MediaInfo_Get() wrapper
+begin
+  result:=StrToInt64Def(MediaInfoGet(FilePath, StreamKind, StreamNumber, Parameter),0);
 end;
 
 function DLLVersion: String;
@@ -244,115 +262,45 @@ begin
 end;
 
 function FileFormat(FilePath: String): String;
-//Media file general stream format
+//Info about general stream
 begin
-  result:='';
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read general stream format
-  if OpenMediaFile(FilePath)=true then
-    result:=MediaInfo_Get(MediaFile, Stream_General, 0, 'Format', 1, 0);
-  except
-  result:='';
-  end;
+  result:=MediaInfoGet(FilePath, Stream_General, 0, 'Format');
 end;
 
 function FileFormatInfo(FilePath: String): String;
 //Info about stream format
 begin
-  result:='';
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read general stream format info
-  if OpenMediaFile(FilePath)=true then
-    result:=MediaInfo_Get(MediaFile, Stream_General, 0, 'Format/Info', 1, 0);
-  except
-  result:='';
-  end;
+  result:=MediaInfoGet(FilePath, Stream_General, 0, 'Format/Info');
 end;
 
 function FileSize(FilePath: String): Int64;
-//Media filesize
+//Filesize
 begin
-  Result:=0;
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read filesize
-  if OpenMediaFile(FilePath)=true then
-    result:=StrToInt64Def(MediaInfo_Get(MediaFile, 0, 0, 'FileSize', 1, 0),0);
-  except
-  Result:=0;
-  end;
+  result:=MediaInfoGetInt64(FilePath, Stream_General, 0, 'FileSize');
 end;
 
 function FilePlayTime(FilePath: String): Int64;
 //Media file duration
 begin
-  Result:=0;
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read duration from file
-  if OpenMediaFile(FilePath)=true then
-    result:=StrToInt64Def(MediaInfo_Get(MediaFile, 0, 0, 'PlayTime', 1, 0),0);
-  except
-  Result:=0;
-  end;
+  result:=MediaInfoGetInt64(FilePath, Stream_General, 0, 'PlayTime');
 end;
 
 function StreamCount(FilePath: String): Integer;
 //Media file stream count
 begin
-  Result:=0;
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read stream count from file
-  if OpenMediaFile(FilePath)=true then
-    result:=StrToInt64Def(MediaInfo_Get(MediaFile, Stream_General, 0, 'StreamCount', 1, 0),0);
-  except
-  Result:=0;
-  end;
+  result:=MediaInfoGetInt(FilePath, Stream_General, 0, 'StreamCount');
 end;
 
 function VideoCount(FilePath: String): Integer;
 //Media file video stream count
 begin
-  Result:=0;
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read video stream count from file
-  if OpenMediaFile(FilePath)=true then
-    result:=StrToInt64Def(MediaInfo_Get(MediaFile, Stream_General, 0, 'VideoCount', 1, 0),0);
-  except
-  Result:=0;
-  end;
+  result:=MediaInfoGetInt(FilePath, Stream_General, 0, 'VideoCount');
 end;
 
 function AudioCount(FilePath: String): Integer;
 //Media file audio stream count
 begin
-  Result:=0;
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read audio stream count from file
-  if OpenMediaFile(FilePath)=true then
-    result:=StrToInt64Def(MediaInfo_Get(MediaFile, Stream_General, 0, 'AudioCount', 1, 0),0);
-  except
-  Result:=0;
-  end;
+  result:=MediaInfoGetInt(FilePath, Stream_General, 0, 'AudioCount');
 end;
 
 function FileCodecs(FilePath: String): TStrings;
@@ -454,243 +402,93 @@ begin
 end;
 
 function FileFirstVideoCodec(FilePath: String): String;
-//Media file first available video codec
+//Codec of the first available video stream
 begin
-  result:='';
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-      exit;
-  try
-  //list first video codec
-  if OpenMediaFile(FilePath)=true then
-    result:=MediaInfo_Get(MediaFile, Stream_Video, 0, 'Format', 1, 0);
-  except
-  result:='';
-  end;
+  result:=MediaInfoGet(FilePath, Stream_Video, 0, 'Format');
 end;
 
 function FileFirstAudioCodec(FilePath: String): String;
-//Media file first available audio codec
+//Codec of the first available audio stream
 begin
-  result:='';
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-      exit;
-  try
-  //list first audio codec
-  if OpenMediaFile(FilePath)=true then
-    result:=MediaInfo_Get(MediaFile, Stream_Audio, 0, 'Format', 1, 0);
-  except
-  result:='';
-  end;
+  result:=MediaInfoGet(FilePath, Stream_Audio, 0, 'Format');
 end;
 
 function VideoWidth(FilePath: String; const StreamNumber: Integer = 0): Integer;
-//Media file video width
+//Video width
 begin
-  Result:=0;
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read video width from file
-  if OpenMediaFile(FilePath)=true then
-    result:=StrToInt64Def(MediaInfo_Get(MediaFile, Stream_Video, StreamNumber, 'Width', 1, 0),0);
-  except
-  Result:=0;
-  end;
+  result:=MediaInfoGetInt(FilePath, Stream_Video, StreamNumber, 'Width');
 end;
 
 function VideoHeight(FilePath: String; const StreamNumber: Integer = 0): Integer;
-//Media file video height
+//Video height
 begin
-  Result:=0;
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read video width from file
-  if OpenMediaFile(FilePath)=true then
-    result:=StrToInt64Def(MediaInfo_Get(MediaFile, Stream_Video, StreamNumber, 'Height', 1, 0),0);
-  except
-  Result:=0;
-  end;
+  result:=MediaInfoGetInt(FilePath, Stream_Video, StreamNumber, 'Height');
 end;
 
 function StreamBitRateString(FilePath: String; const StreamNumber: Integer = 0): String;
 //General stream bitrate
 begin
-  result:='';
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read general stream bitrate
-  if OpenMediaFile(FilePath)=true then
-    result:=MediaInfo_Get(MediaFile, Stream_General, StreamNumber, 'BitRate/String', 1, 0);
-  except
-  result:='';
-  end;
+  result:=MediaInfoGet(FilePath, Stream_General, StreamNumber, 'BitRate/String');
 end;
 
 function VideoBitRateString(FilePath: String; const StreamNumber: Integer = 0): String;
 //Video stream bitrate
 begin
-  result:='';
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read video stream bitrate
-  if OpenMediaFile(FilePath)=true then
-    result:=MediaInfo_Get(MediaFile, Stream_Video, StreamNumber, 'BitRate/String', 1, 0);
-  except
-  result:='';
-  end;
+  result:=MediaInfoGet(FilePath, Stream_Video, StreamNumber, 'BitRate/String');
 end;
 
 function AudioBitRateString(FilePath: String; const StreamNumber: Integer = 0): String;
 //Audio stream bitrate
 begin
-  result:='';
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read audio stream bitrate
-  if OpenMediaFile(FilePath)=true then
-    result:=MediaInfo_Get(MediaFile, Stream_Audio, StreamNumber, 'BitRate/String', 1, 0);
-  except
-  result:='';
-  end;
+  result:=MediaInfoGet(FilePath, Stream_Audio, StreamNumber, 'BitRate/String');
 end;
 
 function DisplayAspectRatioString(FilePath: String; const StreamNumber: Integer = 0): String;
 //Video display aspect ratio
 begin
-  result:='';
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read video stream display aspect ratio
-  if OpenMediaFile(FilePath)=true then
-    result:=MediaInfo_Get(MediaFile, Stream_Video, StreamNumber, 'DisplayAspectRatio/String', 1, 0);
-  except
-  result:='';
-  end;
+  result:=MediaInfoGet(FilePath, Stream_Video, StreamNumber, 'DisplayAspectRatio/String');
 end;
 
 function PixelAspectRatioString(FilePath: String; const StreamNumber: Integer = 0): String;
 //Pixel aspect ratio
 begin
-  result:='';
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read video stream pixel aspect ratio
-  if OpenMediaFile(FilePath)=true then
-    result:=MediaInfo_Get(MediaFile, Stream_Video, StreamNumber, 'PixelAspectRatio/String', 1, 0);
-  except
-  result:='';
-  end;
+  result:=MediaInfoGet(FilePath, Stream_Video, StreamNumber, 'PixelAspectRatio/String');
 end;
 
 function VideoFrameRate(FilePath: String; const StreamNumber: Integer = 0): String;
 //Video frame rate
 begin
-  result:='';
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read video frame rate
-  if OpenMediaFile(FilePath)=true then
-    result:=MediaInfo_Get(MediaFile, Stream_Video, StreamNumber, 'FrameRate/String', 1, 0);
-  except
-  result:='';
-  end;
+  result:=MediaInfoGet(FilePath, Stream_Video, StreamNumber, 'FrameRate/String');
 end;
 
 function AudioSamplingRateString(FilePath: String; const StreamNumber: Integer = 0): String;
 //Audio stream sampling rate
 begin
-  result:='';
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read audio stream sampling rate
-  if OpenMediaFile(FilePath)=true then
-    result:=MediaInfo_Get(MediaFile, Stream_Audio, StreamNumber, 'SamplingRate/String', 1, 0);
-  except
-  result:='';
-  end;
+  result:=MediaInfoGet(FilePath, Stream_Audio, StreamNumber, 'SamplingRate/String');
 end;
 
 function PictureFormat(FilePath: String): String;
 //Picture file format
 begin
-  result:='';
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read picture file format
-  if OpenMediaFile(FilePath)=true then
-    result:=MediaInfo_Get(MediaFile, Stream_General, 0, 'Format', 1, 0);
-  except
-  result:='';
-  end;
+  result:=MediaInfoGet(FilePath, Stream_General, 0, 'Format');
 end;
 
 function PictureWidth(FilePath: String): Integer;
 //Picture width
 begin
-  Result:=0;
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read picture width from file
-  if OpenMediaFile(FilePath)=true then
-    result:=StrToInt64Def(MediaInfo_Get(MediaFile, Stream_Image, 0, 'Width', 1, 0),0);
-  except
-  Result:=0;
-  end;
+  result:=MediaInfoGetInt(FilePath, Stream_Image, 0, 'Width');
 end;
 
 function PictureHeight(FilePath: String): Integer;
 //Picture height
 begin
-  Result:=0;
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read picture height from file
-  if OpenMediaFile(FilePath)=true then
-    result:=StrToInt64Def(MediaInfo_Get(MediaFile, Stream_Image, 0, 'Height', 1, 0),0);
-  except
-  Result:=0;
-  end;
+  result:=MediaInfoGetInt(FilePath, Stream_Image, 0, 'Height');
 end;
 
 function MIMEType(FilePath: String): String;
 //File MIME type
 begin
-  result:='';
-  //check if DLL is loaded
-  if MediaInfo_DLL_OK=false then
-    exit;
-  try
-  //read file MIME type
-  if OpenMediaFile(FilePath)=true then
-    result:=MediaInfo_Get(MediaFile, Stream_General, 0, 'InternetMediaType', 1, 0);
-  except
-  result:='';
-  end;
+  result:=MediaInfoGet(FilePath, Stream_General, 0, 'InternetMediaType');
 end;
 
 procedure LoadDLL;
